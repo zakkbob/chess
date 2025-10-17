@@ -7,6 +7,14 @@ import (
 	"github.com/zakkbob/chess"
 )
 
+func BenchmarkMove(b *testing.B) {
+	bd := chess.NewBoard()
+
+	for b.Loop() {
+		bd.Move(0)
+	}
+}
+
 func TestString(t *testing.T) {
 	b := chess.NewBoard()
 	expected := "rnbqkbnr\npppppppp\n        \n        \n        \n        \nPPPPPPPP\nRNBQKBNR\n"
