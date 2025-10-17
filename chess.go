@@ -1,6 +1,7 @@
 package chess
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -174,98 +175,69 @@ func BoardFromRanks(rs [8]string, turn Turn) Board {
 func (b *Board) Move(m Move) {
 	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
 	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
-
 	var fromMask = uint64(1) << from
 	var toMask = uint64(1) << to
-
 	var moveMask uint64 = fromMask | toMask
 
+	// Move piece
+	var bitboards map[uint32]*uint64
+	var kingCastleMask, queenCastleMask uint64
 	if b.turn == WhiteTurn {
-		// Move piece
-		switch m & PieceTypeMask {
-		case PawnType:
-			b.whitePawns ^= moveMask
-		case RookType:
-			b.whiteRooks ^= moveMask
-		case KnightType:
-			b.whiteKnights ^= moveMask
-		case BishopType:
-			b.whiteBishops ^= moveMask
-		case QueenType:
-			b.whiteQueens ^= moveMask
-		case KingType:
-			b.whiteKings ^= moveMask
+		bitboards = map[uint32]*uint64{
+			PawnType:   &b.whitePawns,
+			RookType:   &b.whiteRooks,
+			KnightType: &b.whiteKnights,
+			BishopType: &b.whiteBishops,
+			QueenType:  &b.whiteQueens,
+			KingType:   &b.whiteKings,
 		}
-
-		// Handle promotion
-		switch m & PromotionMask {
-		case RookPromotion:
-			b.whitePawns ^= toMask
-			b.whiteRooks |= toMask
-		case KnightPromotion:
-			b.whitePawns ^= toMask
-			b.whiteKnights |= toMask
-		case BishopPromotion:
-			b.whitePawns ^= toMask
-			b.whiteBishops |= toMask
-		case QueenPromotion:
-			b.whitePawns ^= toMask
-			b.whiteQueens |= toMask
+		kingCastleMask = 0b00000101
+		queenCastleMask = 0b10010000
+	} else {
+		bitboards = map[uint32]*uint64{
+			PawnType:   &b.blackPawns,
+			RookType:   &b.blackRooks,
+			KnightType: &b.blackKnights,
+			BishopType: &b.blackBishops,
+			QueenType:  &b.blackQueens,
+			KingType:   &b.blackKings,
 		}
+		kingCastleMask = 0b00000101 << 56
+		queenCastleMask = 0b10010000 << 56
+	}
+	bitboard, ok := bitboards[m&PieceTypeMask]
+	if !ok {
+		panic("Move does not contain valid piece type: " + strconv.FormatInt(int64(m), 2))
+	}
+	*bitboard ^= moveMask
 
-		// Handle castling
-		switch m & CastleMask {
-		case KingCastle:
-			b.whiteRooks ^= 0b00000101
-		case QueenCastle:
-			b.whiteRooks ^= 0b10010000
-		}
+	// Handle promotion
+	promotionPieceTypes := map[uint32]uint32{
+		RookPromotion:   RookType,
+		KnightPromotion: KnightType,
+		BishopPromotion: BishopType,
+		QueenPromotion:  QueenType,
+	}
+	pieceType, ok := promotionPieceTypes[m&PromotionMask]
+	if ok {
+		*bitboards[PawnType] ^= toMask
+		*bitboards[pieceType] |= toMask
+	}
 
+	// Handle castling
+	switch m & CastleMask {
+	case KingCastle:
+		*bitboards[RookType] ^= kingCastleMask
+	case QueenCastle:
+		*bitboards[RookType] ^= queenCastleMask
+	}
+
+	if b.turn == WhiteTurn {
 		// Handle en passant
 		if m&EnPassantMask != 0 {
 			b.blackPawns ^= toMask >> 8
 		}
 	} else {
-		// Move piece
-		switch m & PieceTypeMask {
-		case PawnType:
-			b.blackPawns ^= moveMask
-		case RookType:
-			b.blackRooks ^= moveMask
-		case KnightType:
-			b.blackKnights ^= moveMask
-		case BishopType:
-			b.blackBishops ^= moveMask
-		case QueenType:
-			b.blackQueens ^= moveMask
-		case KingType:
-			b.blackKings ^= moveMask
-		}
-
-		// Handle promotion
-		switch m & PromotionMask {
-		case RookPromotion:
-			b.blackPawns ^= toMask
-			b.blackRooks |= toMask
-		case KnightPromotion:
-			b.blackPawns ^= toMask
-			b.blackKnights |= toMask
-		case BishopPromotion:
-			b.blackPawns ^= toMask
-			b.blackBishops |= toMask
-		case QueenPromotion:
-			b.blackPawns ^= toMask
-			b.blackQueens |= toMask
-		}
-
-		// Handle castling
-		switch m & CastleMask {
-		case KingCastle:
-			b.blackRooks ^= 0b00000101 << 56
-		case QueenCastle:
-			b.blackRooks ^= 0b10010000 << 56
-		}
-
 		// Handle en passant
 		if m&EnPassantMask != 0 {
 			b.whitePawns ^= toMask << 8
