@@ -57,7 +57,7 @@ func TestRankString(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestMove(t *testing.T) {
+func TestMoveUnmove(t *testing.T) {
 	move := func(from, to int) uint32 {
 		return uint32(from<<23) | uint32(to<<17)
 	}
@@ -469,13 +469,269 @@ func TestMove(t *testing.T) {
 				"  r     ",
 			},
 		},
+		{
+			name: "Capture black pawn",
+			turn: chess.WhiteTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  p     ",
+				"        ",
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.PawnCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture black rook",
+			turn: chess.WhiteTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  r     ",
+				"        ",
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.RookCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture black knight",
+			turn: chess.WhiteTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  n     ",
+				"        ",
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.KnightCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture black bishop",
+			turn: chess.WhiteTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  b     ",
+				"        ",
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.BishopCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture black queen",
+			turn: chess.WhiteTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.QueenCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture white pawn",
+			turn: chess.BlackTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  P     ",
+				"        ",
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.PawnCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture white rook",
+			turn: chess.BlackTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  R     ",
+				"        ",
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.RookCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture white knight",
+			turn: chess.BlackTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  N     ",
+				"        ",
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.KnightCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture white bishop",
+			turn: chess.BlackTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  B     ",
+				"        ",
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.BishopCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
+		{
+			name: "Capture white queen",
+			turn: chess.BlackTurn,
+			board: [8]string{
+				"        ",
+				"        ",
+				"  Q     ",
+				"        ",
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+			},
+			move: chess.QueenType | move(13, 45) | chess.QueenCapture,
+			expected: [8]string{
+				"        ",
+				"        ",
+				"  q     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := chess.BoardFromRanks(tt.board, tt.turn)
-			b.Move(tt.move)
-			assert.Equal(t, tt.expected, b.RankStrings())
+			t.Run("Move", func(t *testing.T) {
+				b.Move(tt.move)
+				assert.Equal(t, tt.expected, b.RankStrings())
+			})
+			t.Run("Unmove", func(t *testing.T) {
+				b.Unmove(tt.move)
+				assert.Equal(t, tt.board, b.RankStrings())
+			})
 		})
 	}
 }

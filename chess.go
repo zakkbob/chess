@@ -81,6 +81,15 @@ const (
 )
 
 const (
+	// Capture             0b00000000000000000011100000000000
+	NoCapture     uint32 = 0b00000000000000000000000000000000
+	PawnCapture   uint32 = 0b00000000000000000000100000000000
+	RookCapture   uint32 = 0b00000000000000000001000000000000
+	KnightCapture uint32 = 0b00000000000000000001100000000000
+	BishopCapture uint32 = 0b00000000000000000010000000000000
+	QueenCapture  uint32 = 0b00000000000000000010100000000000
+)
+const (
 	// Castle            0b00000000000000000000000000110000
 	NoCastle    uint32 = 0b00000000000000000000000000000000
 	KingCastle  uint32 = 0b00000000000000000000000000100000
@@ -197,6 +206,20 @@ func (b *Board) Move(m Move) {
 			b.whiteKings ^= moveMask
 		}
 
+		// Capture piece
+		switch m & CaptureMask {
+		case PawnCapture:
+			b.blackPawns ^= toMask
+		case RookCapture:
+			b.blackRooks ^= toMask
+		case KnightCapture:
+			b.blackKnights ^= toMask
+		case BishopCapture:
+			b.blackBishops ^= toMask
+		case QueenCapture:
+			b.blackQueens ^= toMask
+		}
+
 		// Handle promotion
 		switch m & PromotionMask {
 		case RookPromotion:
@@ -242,6 +265,20 @@ func (b *Board) Move(m Move) {
 			b.blackKings ^= moveMask
 		}
 
+		// Capture piece
+		switch m & CaptureMask {
+		case PawnCapture:
+			b.whitePawns ^= toMask
+		case RookCapture:
+			b.whiteRooks ^= toMask
+		case KnightCapture:
+			b.whiteKnights ^= toMask
+		case BishopCapture:
+			b.whiteBishops ^= toMask
+		case QueenCapture:
+			b.whiteQueens ^= toMask
+		}
+
 		// Handle promotion
 		switch m & PromotionMask {
 		case RookPromotion:
@@ -272,6 +309,136 @@ func (b *Board) Move(m Move) {
 		}
 	}
 
+}
+
+func (b *Board) Unmove(m Move) {
+	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
+	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
+
+	var fromMask = uint64(1) << from
+	var toMask = uint64(1) << to
+
+	var moveMask uint64 = fromMask | toMask
+
+	if b.turn == WhiteTurn {
+		// Undo promotion
+		switch m & PromotionMask {
+		case RookPromotion:
+			b.whitePawns |= toMask
+			b.whiteRooks ^= toMask
+		case KnightPromotion:
+			b.whitePawns |= toMask
+			b.whiteKnights ^= toMask
+		case BishopPromotion:
+			b.whitePawns |= toMask
+			b.whiteBishops ^= toMask
+		case QueenPromotion:
+			b.whitePawns |= toMask
+			b.whiteQueens ^= toMask
+		}
+
+		// Unmove piece
+		switch m & PieceTypeMask {
+		case PawnType:
+			b.whitePawns ^= moveMask
+		case RookType:
+			b.whiteRooks ^= moveMask
+		case KnightType:
+			b.whiteKnights ^= moveMask
+		case BishopType:
+			b.whiteBishops ^= moveMask
+		case QueenType:
+			b.whiteQueens ^= moveMask
+		case KingType:
+			b.whiteKings ^= moveMask
+		}
+
+		// Uncapture piece
+		switch m & CaptureMask {
+		case PawnCapture:
+			b.blackPawns |= toMask
+		case RookCapture:
+			b.blackRooks |= toMask
+		case KnightCapture:
+			b.blackKnights |= toMask
+		case BishopCapture:
+			b.blackBishops |= toMask
+		case QueenCapture:
+			b.blackQueens |= toMask
+		}
+
+		// Uncastle
+		switch m & CastleMask {
+		case KingCastle:
+			b.whiteRooks ^= 0b00000101
+		case QueenCastle:
+			b.whiteRooks ^= 0b10010000
+		}
+
+		// Undo en passant
+		if m&EnPassantMask != 0 {
+			b.blackPawns ^= toMask >> 8
+		}
+	} else {
+		// Undo promotion
+		switch m & PromotionMask {
+		case RookPromotion:
+			b.blackPawns |= toMask
+			b.blackRooks ^= toMask
+		case KnightPromotion:
+			b.blackPawns |= toMask
+			b.blackKnights ^= toMask
+		case BishopPromotion:
+			b.blackPawns |= toMask
+			b.blackBishops ^= toMask
+		case QueenPromotion:
+			b.blackPawns |= toMask
+			b.blackQueens ^= toMask
+		}
+
+		// Unmove piece
+		switch m & PieceTypeMask {
+		case PawnType:
+			b.blackPawns ^= moveMask
+		case RookType:
+			b.blackRooks ^= moveMask
+		case KnightType:
+			b.blackKnights ^= moveMask
+		case BishopType:
+			b.blackBishops ^= moveMask
+		case QueenType:
+			b.blackQueens ^= moveMask
+		case KingType:
+			b.blackKings ^= moveMask
+		}
+
+		// Uncapture piece
+		switch m & CaptureMask {
+		case PawnCapture:
+			b.whitePawns |= toMask
+		case RookCapture:
+			b.whiteRooks |= toMask
+		case KnightCapture:
+			b.whiteKnights |= toMask
+		case BishopCapture:
+			b.whiteBishops |= toMask
+		case QueenCapture:
+			b.whiteQueens |= toMask
+		}
+
+		// Uncastle
+		switch m & CastleMask {
+		case KingCastle:
+			b.blackRooks ^= 0b00000101 << 56
+		case QueenCastle:
+			b.blackRooks ^= 0b10010000 << 56
+		}
+
+		// Undo en passant
+		if m&EnPassantMask != 0 {
+			b.whitePawns ^= toMask << 8
+		}
+	}
 }
 
 // Returns an array of ranks represented by strings
