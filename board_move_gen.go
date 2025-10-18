@@ -31,9 +31,20 @@ func (b *Board) LegalMoves() []Move {
 
 		var (
 			rank0 uint64 = 0x00000000000000ff
+			rank1 uint64 = 0x000000000000ff00
+			//rank2 uint64 = 0x0000000000ff0000
 			rank3 uint64 = 0x00000000ff000000
+			//rank4 uint64 = 0x000000ff00000000
+			//rank5 uint64 = 0x0000ff0000000000
+			rank6 uint64 = 0x00ff000000000000
 			rank7 uint64 = 0xff00000000000000
 			file0 uint64 = 0x0101010101010101
+			file1 uint64 = 0x0202020202020202
+			//file2 uint64 = 0x0404040404040404
+			//file3 uint64 = 0x0808080808080808
+			//file4 uint64 = 0x1010101010101010
+			//file5 uint64 = 0x2020202020202020
+			file6 uint64 = 0x4040404040404040
 			file7 uint64 = 0x8080808080808080
 		)
 
@@ -212,6 +223,27 @@ func (b *Board) LegalMoves() []Move {
 			moves := rookRays(i) | bishopRays(i)
 			addMovesAndCaptures(moves, i, QueenType, NoPromotion, false, NoCastle)
 			q &= q - 1
+		}
+
+		// Knight
+		n := knights
+		for n != 0 {
+			i := bits.TrailingZeros64(n)
+
+			board := uint64(1) << i
+
+			moves := (^(rank7 | file1 | file0) & board) << 6
+			moves |= (^(rank7 | file6 | file7) & board) << 10
+			moves |= (^(rank7 | rank6 | file0) & board) << 15
+			moves |= (^(rank7 | rank6 | file7) & board) << 17
+			moves |= (^(rank0 | file6 | file7) & board) >> 6
+			moves |= (^(rank0 | file1 | file0) & board) >> 10
+			moves |= (^(rank0 | rank1 | file7) & board) >> 15
+			moves |= (^(rank0 | rank1 | file1) & board) >> 17
+
+			addMovesAndCaptures(moves, i, KnightType, NoPromotion, false, NoCastle)
+
+			n &= n - 1
 		}
 
 		// King
