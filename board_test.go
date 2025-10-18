@@ -63,6 +63,26 @@ func move(from, to int) chess.Move {
 	return chess.Move(from<<23) | chess.Move(to<<17)
 }
 
+func TestDoublePush(t *testing.T) {
+	b := chess.NewBoard()
+
+	assert.Equal(t, false, b.CanEnPassant)
+
+	b.Move(chess.NewMove(9, 25, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+	assert.Equal(t, true, b.CanEnPassant)
+	assert.Equal(t, 1, b.EnPassantFile)
+
+	b.Move(chess.NewMove(55, 47, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+	assert.Equal(t, false, b.CanEnPassant)
+
+	b.Unmove()
+	assert.Equal(t, true, b.CanEnPassant)
+	assert.Equal(t, 1, b.EnPassantFile)
+
+	b.Unmove()
+	assert.Equal(t, false, b.CanEnPassant)
+}
+
 func TestMoveUnmove(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -857,4 +877,95 @@ func TestMoveCounters(t *testing.T) {
 		require.Equal(t, b.QuietMoveCounter(), tt.QuietMoveCounter, "Quiet move counter wrong for unmove pawn push (returning to move %d)", i+1)
 	}
 
+}
+
+func TestMoveGen(t *testing.T) {
+	tests := []struct {
+		Name  string
+		Ranks [8]string
+		Turn  chess.Turn
+		Moves []chess.Move
+	}{
+		{
+			Name: "Home row pawns",
+			Ranks: [8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"PPPPPPPP",
+				"        ",
+			},
+			Turn: chess.WhiteTurn,
+			Moves: []chess.Move{
+				// single pushes
+				chess.NewMove(8, 16, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(9, 17, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(10, 18, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(11, 19, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(12, 20, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(13, 21, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(14, 22, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(15, 23, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+
+				// double pushes
+				chess.NewMove(8, 24, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(9, 25, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(10, 26, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(11, 27, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(12, 28, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(13, 29, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(14, 30, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(15, 31, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+			},
+		},
+		{
+			Name: "Pawn promotion",
+			Ranks: [8]string{
+				"        ",
+				"      P ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			Turn: chess.WhiteTurn,
+			Moves: []chess.Move{
+				chess.NewMove(49, 57, chess.PawnType, chess.QueenPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(49, 57, chess.PawnType, chess.BishopPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(49, 57, chess.PawnType, chess.KnightPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(49, 57, chess.PawnType, chess.RookPromotion, chess.NoCapture, false, chess.NoCastle),
+			},
+		},
+		{
+			Name: "Pawn capture",
+			Ranks: [8]string{
+				"        ",
+				"        ",
+				"   r    ",
+				"  P     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			Turn: chess.WhiteTurn,
+			Moves: []chess.Move{
+				chess.NewMove(37, 45, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(37, 44, chess.PawnType, chess.NoPromotion, chess.RookCapture, false, chess.NoCastle),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			b := chess.BoardFromRanks(tt.Ranks, tt.Turn)
+			ms := b.LegalMoves()
+			assert.ElementsMatch(t, tt.Moves, ms)
+		})
+	}
 }

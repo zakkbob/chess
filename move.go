@@ -1,5 +1,7 @@
 package chess
 
+import "strconv"
+
 // --- Move Representation ---
 // Bits Overview (inclusive)
 // 0-2   - Piece type
@@ -45,6 +47,32 @@ package chess
 // 10 - King side
 // 11 - Queen side
 type Move uint32
+
+func (m Move) String() string {
+	s := strconv.Itoa(int(m.From())) + " to " + strconv.Itoa(int(m.To()))
+
+	if m.Capture() != NoCapture {
+		s += ", captures " + m.Capture().String()
+	}
+
+	if m.Promotion() != NoPromotion {
+		s += ", promotes " + m.Promotion().String()
+	}
+
+	if m.EnPassant() {
+		s += ", en passants"
+	}
+
+	return s
+}
+
+func (m Move) IsNoisy() bool {
+	return (m.PieceType() == PawnType) || (m.Capture() != NoCapture)
+}
+
+func (m Move) IsDoublePush() bool {
+	return (m.PieceType() == PawnType) && ((m.FromRank() == 1 && m.ToRank() == 3) || (m.FromRank() == 6 && m.ToRank() == 4))
+}
 
 func (m Move) PieceType() PieceType {
 	return PieceType(uint32(m) & PieceTypeMask)
@@ -98,27 +126,6 @@ func NewMove(from, to int, pieceType PieceType, promotion Promotion, capture Cap
 	return m
 }
 
-func PieceTypeToCapture(p PieceType) Capture {
-	switch p {
-	case PawnType:
-		return PawnCapture
-	case RookType:
-		return RookCapture
-	case KnightType:
-		return KnightCapture
-	case BishopType:
-		return BishopCapture
-	case QueenType:
-		return QueenCapture
-	case KingType:
-		panic("unable to convert KingType to capture - cannot capture king")
-	case NoType:
-		return NoCapture
-	default:
-		panic("unable to convert PieceType to capture - invalid piece type")
-	}
-}
-
 const (
 	PieceTypeMask    uint32 = 0b11100000000000000000000000000000
 	FromMask         uint32 = 0b00011111100000000000000000000000
@@ -143,6 +150,27 @@ const (
 	NoType     PieceType = 0b11000000000000000000000000000000
 )
 
+func (p PieceType) ToCapture() Capture {
+	switch p {
+	case PawnType:
+		return PawnCapture
+	case RookType:
+		return RookCapture
+	case KnightType:
+		return KnightCapture
+	case BishopType:
+		return BishopCapture
+	case QueenType:
+		return QueenCapture
+	case KingType:
+		panic("unable to convert KingType to capture - cannot capture king")
+	case NoType:
+		return NoCapture
+	default:
+		panic("unable to convert PieceType to capture - invalid piece type")
+	}
+}
+
 type Promotion uint32
 
 const (
@@ -153,6 +181,23 @@ const (
 	BishopPromotion Promotion = 0b00000000000000011000000000000000
 	QueenPromotion  Promotion = 0b00000000000000011100000000000000
 )
+
+func (p Promotion) String() string {
+	switch p {
+	case NoPromotion:
+		return "nothing"
+	case RookPromotion:
+		return "rook"
+	case KnightPromotion:
+		return "knight"
+	case BishopPromotion:
+		return "bishop"
+	case QueenPromotion:
+		return "queen"
+	default:
+		panic("invalid promotion")
+	}
+}
 
 type Capture uint32
 
@@ -165,6 +210,25 @@ const (
 	BishopCapture Capture = 0b00000000000000000010000000000000
 	QueenCapture  Capture = 0b00000000000000000010100000000000
 )
+
+func (c Capture) String() string {
+	switch c {
+	case NoCapture:
+		return "nothing"
+	case PawnCapture:
+		return "pawn"
+	case RookCapture:
+		return "rook"
+	case KnightCapture:
+		return "knight"
+	case BishopCapture:
+		return "bishop"
+	case QueenCapture:
+		return "queen"
+	default:
+		panic("invalid capture")
+	}
+}
 
 type Castle uint32
 

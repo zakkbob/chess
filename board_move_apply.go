@@ -4,7 +4,7 @@ package chess
 // Assumes it is valid and legal
 func (b *Board) DoCoordinateMove(from, to int, promotion Promotion) {
 	pieceType := b.pieceType(from)
-	capture := PieceTypeToCapture(b.pieceType(to))
+	capture := b.pieceType(to).ToCapture()
 
 	fromRank := from / 8
 	fromFile := from % 8
@@ -51,9 +51,15 @@ func (b *Board) Move(m Move) {
 
 	var moveMask uint64 = fromMask | toMask
 
-	noisyMove := (m.PieceType() == PawnType) || (m.Capture() != NoCapture)
-	if noisyMove {
+	if m.IsNoisy() {
 		b.noisyMoves = append(b.noisyMoves, b.HalfMoves-1)
+	}
+
+	if m.IsDoublePush() {
+		b.CanEnPassant = true
+		b.EnPassantFile = int(m.ToFile())
+	} else {
+		b.CanEnPassant = false
 	}
 
 	if b.Turn == WhiteTurn {
@@ -192,6 +198,14 @@ func (b *Board) Unmove() {
 	m := b.Moves[b.HalfMoves-1]
 	b.Moves = b.Moves[:b.HalfMoves-1]
 	b.HalfMoves--
+
+	if b.HalfMoves != 0 {
+		lastMove := b.Moves[b.HalfMoves-1]
+		b.CanEnPassant = lastMove.IsDoublePush()
+		b.EnPassantFile = int(lastMove.ToFile())
+	} else {
+		b.CanEnPassant = false
+	}
 
 	var from uint32 = m.From()
 	var to uint32 = m.To()

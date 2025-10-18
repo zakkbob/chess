@@ -12,6 +12,13 @@ func main() {
 	for {
 		fmt.Println(b.String())
 
+		ms := b.LegalMoves()
+		fmt.Println(len(ms), "legal moves")
+		for _, m := range ms {
+			fmt.Println(m.String())
+		}
+		fmt.Println(b.CanEnPassant, b.EnPassantFile)
+
 		var from int
 		var to int
 
@@ -22,5 +29,6 @@ func main() {
 		fmt.Scanln(&to)
 
 		b.DoCoordinateMove(from, to, chess.NoPromotion)
+
 	}
 }

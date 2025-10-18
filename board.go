@@ -4,6 +4,10 @@ import (
 	"strings"
 )
 
+func Index(rank, file int) int {
+	return rank*8 + file
+}
+
 type Turn = bool
 
 const (
@@ -26,10 +30,12 @@ type Board struct {
 	blackQueens  uint64
 	blackKings   uint64
 
-	Turn       Turn
-	HalfMoves  int
-	Moves      []Move
-	noisyMoves []int
+	Turn          Turn
+	HalfMoves     int
+	Moves         []Move
+	noisyMoves    []int
+	CanEnPassant  bool
+	EnPassantFile int // if last move was a double push, holds file
 }
 
 // Returns a board in the proper starting configuration
