@@ -58,8 +58,9 @@ func TestRankString(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func move(from, to int) uint32 {
-	return uint32(from<<23) | uint32(to<<17)
+// not needed, but i don't want to rewrite the tests
+func move(from, to int) chess.Move {
+	return chess.Move(from<<23) | chess.Move(to<<17)
 }
 
 func TestMoveUnmove(t *testing.T) {
@@ -83,7 +84,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"RNBQKBNR",
 			},
-			move: chess.PawnType | move(9, 17),
+			move: chess.Move(chess.PawnType) | move(9, 17),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppppppp",
@@ -108,7 +109,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"RNBQKBNR",
 			},
-			move: chess.PawnType | move(49, 33),
+			move: chess.Move(chess.PawnType) | move(49, 33),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppppp p",
@@ -133,7 +134,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPP PPPP",
 				"RNBQKBNR",
 			},
-			move: chess.PawnType | move(36, 43) | chess.EnPassantMask,
+			move: chess.Move(chess.PawnType) | move(36, 43) | chess.Move(chess.EnPassantMask),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppp ppp",
@@ -158,7 +159,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPP ",
 				"RNBQKBNR",
 			},
-			move: chess.PawnType | move(25, 16) | chess.EnPassantMask,
+			move: chess.Move(chess.PawnType) | move(25, 16) | chess.Move(chess.EnPassantMask),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppppp p",
@@ -183,7 +184,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"RNBQK  R",
 			},
-			move: chess.KingType | move(3, 1) | chess.KingCastle,
+			move: chess.Move(chess.KingType) | move(3, 1) | chess.Move(chess.KingCastle),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppppppp",
@@ -208,7 +209,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"R   KBNR",
 			},
-			move: chess.KingType | move(3, 5) | chess.QueenCastle,
+			move: chess.Move(chess.KingType) | move(3, 5) | chess.Move(chess.QueenCastle),
 			expected: [8]string{
 				"rnbqkbnr",
 				"pppppppp",
@@ -233,7 +234,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"RNBQKBNR",
 			},
-			move: chess.KingType | move(59, 57) | chess.KingCastle,
+			move: chess.Move(chess.KingType) | move(59, 57) | chess.Move(chess.KingCastle),
 			expected: [8]string{
 				"rnbq rk ",
 				"pppppppp",
@@ -258,7 +259,7 @@ func TestMoveUnmove(t *testing.T) {
 				"PPPPPPPP",
 				"RNBQKBNR",
 			},
-			move: chess.KingType | move(59, 61) | chess.QueenCastle,
+			move: chess.Move(chess.KingType) | move(59, 61) | chess.Move(chess.QueenCastle),
 			expected: [8]string{
 				"  kr bnr",
 				"pppppppp",
@@ -283,7 +284,7 @@ func TestMoveUnmove(t *testing.T) {
 				"        ",
 				"        ",
 			},
-			move: chess.PawnType | move(51, 59) | chess.KnightPromotion,
+			move: chess.Move(chess.PawnType) | move(51, 59) | chess.Move(chess.KnightPromotion),
 			expected: [8]string{
 				"    N   ",
 				"        ",
@@ -308,7 +309,7 @@ func TestMoveUnmove(t *testing.T) {
 				"        ",
 				"        ",
 			},
-			move: chess.PawnType | move(53, 61) | chess.BishopPromotion,
+			move: chess.Move(chess.PawnType) | move(53, 61) | chess.Move(chess.BishopPromotion),
 			expected: [8]string{
 				"  B     ",
 				"        ",
@@ -333,7 +334,7 @@ func TestMoveUnmove(t *testing.T) {
 				"        ",
 				"        ",
 			},
-			move: chess.PawnType | move(48, 56) | chess.RookPromotion,
+			move: chess.Move(chess.PawnType) | move(48, 56) | chess.Move(chess.RookPromotion),
 			expected: [8]string{
 				"       R",
 				"        ",
@@ -358,7 +359,7 @@ func TestMoveUnmove(t *testing.T) {
 				"        ",
 				"        ",
 			},
-			move: chess.PawnType | move(55, 63) | chess.QueenPromotion,
+			move: chess.Move(chess.PawnType) | move(55, 63) | chess.Move(chess.QueenPromotion),
 			expected: [8]string{
 				"Q       ",
 				"        ",
@@ -383,7 +384,7 @@ func TestMoveUnmove(t *testing.T) {
 				"    p   ",
 				"        ",
 			},
-			move: chess.PawnType | move(11, 3) | chess.KnightPromotion,
+			move: chess.Move(chess.PawnType) | move(11, 3) | chess.Move(chess.KnightPromotion),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -408,7 +409,7 @@ func TestMoveUnmove(t *testing.T) {
 				"       p",
 				"        ",
 			},
-			move: chess.PawnType | move(8, 0) | chess.BishopPromotion,
+			move: chess.Move(chess.PawnType) | move(8, 0) | chess.Move(chess.BishopPromotion),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -433,7 +434,7 @@ func TestMoveUnmove(t *testing.T) {
 				"p       ",
 				"        ",
 			},
-			move: chess.PawnType | move(15, 7) | chess.RookPromotion,
+			move: chess.Move(chess.PawnType) | move(15, 7) | chess.Move(chess.RookPromotion),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -458,7 +459,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  p     ",
 				"        ",
 			},
-			move: chess.PawnType | move(13, 5) | chess.RookPromotion,
+			move: chess.Move(chess.PawnType) | move(13, 5) | chess.Move(chess.RookPromotion),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -483,7 +484,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  Q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.PawnCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.PawnCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -508,7 +509,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  Q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.RookCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.RookCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -533,7 +534,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  Q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.KnightCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.KnightCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -558,7 +559,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  Q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.BishopCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.BishopCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -583,7 +584,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  Q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.QueenCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.QueenCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -608,7 +609,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.PawnCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.PawnCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -633,7 +634,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.RookCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.RookCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -658,7 +659,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.KnightCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.KnightCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -683,7 +684,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.BishopCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.BishopCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -708,7 +709,7 @@ func TestMoveUnmove(t *testing.T) {
 				"  q     ",
 				"        ",
 			},
-			move: chess.QueenType | move(13, 45) | chess.QueenCapture,
+			move: chess.Move(chess.QueenType) | move(13, 45) | chess.Move(chess.QueenCapture),
 			expected: [8]string{
 				"        ",
 				"        ",
@@ -755,7 +756,7 @@ func TestMoveCounters(t *testing.T) {
 		//PPPPPPPP
 		//RNBQKBNR
 		{
-			Move:             chess.PawnType | move(9, 17),
+			Move:             chess.Move(chess.PawnType) | move(9, 17),
 			HalfMoves:        1,
 			QuietMoveCounter: 0,
 		},
@@ -768,7 +769,7 @@ func TestMoveCounters(t *testing.T) {
 		//PPPPPP P
 		//RNBQKBNR
 		{
-			Move:             chess.KnightType | move(62, 47),
+			Move:             chess.Move(chess.KnightType) | move(62, 47),
 			HalfMoves:        2,
 			QuietMoveCounter: 1,
 		},
@@ -781,7 +782,7 @@ func TestMoveCounters(t *testing.T) {
 		//PPPPPP P
 		//RNBQKBNR
 		{
-			Move:             chess.BishopType | move(2, 16),
+			Move:             chess.Move(chess.BishopType) | move(2, 16),
 			HalfMoves:        3,
 			QuietMoveCounter: 2,
 		},
@@ -794,7 +795,7 @@ func TestMoveCounters(t *testing.T) {
 		//PPPPPP P
 		//RNBQK NR
 		{
-			Move:             chess.PawnType | move(48, 40),
+			Move:             chess.Move(chess.PawnType) | move(48, 40),
 			HalfMoves:        4,
 			QuietMoveCounter: 0,
 		},
@@ -830,10 +831,10 @@ func TestMoveCounters(t *testing.T) {
 
 		// Add an extra test each step, so the history is non-linear
 		if b.Turn == chess.WhiteTurn {
-			b.Move(chess.PawnType | move(15, 23))
+			b.Move(chess.Move(chess.PawnType) | move(15, 23))
 
 		} else {
-			b.Move(chess.PawnType | move(55, 47))
+			b.Move(chess.Move(chess.PawnType) | move(55, 47))
 		}
 
 		require.Equal(t, b.HalfMoves, tt.HalfMoves+1, "Halfmove counter wrong for pawn push (after unmove %d)", i+1)

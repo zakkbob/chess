@@ -4,98 +4,6 @@ import (
 	"strings"
 )
 
-// --- Move Representation ---
-// Bits Overview (inclusive)
-// 0-2   - Piece type
-// 3-8   - From
-// 9-14  - To
-// 15-17 - Promotion
-// 18-20 - Capture
-// 21    - En passant
-// 22-25 - Castling rights (before move)
-// 26-27 - Castle side (if the move is a castle)
-//
-// Piece type
-// 000 - Pawn
-// 001 - Rook
-// 010 - Knight
-// 011 - Bishop
-// 100 - Queen
-// 101 - King
-//
-// Promotion
-// 000 - None
-// 100 - Rook
-// 101 - Knight
-// 110 - Bishop
-// 111 - Queen
-//
-// Capture
-// 000 - None
-// 001 - Pawn
-// 010 - Rook
-// 011 - Knight
-// 100 - Bishop
-// 101 - Queen
-//
-// Castling rights
-// 1xxx - White kingside
-// x1xx - White queenside
-// xx1x - Black kingside
-// xxx1 - Black queenside
-//
-// Castle side
-// 00 - No castle
-// 10 - King side
-// 11 - Queen side
-type Move = uint32
-
-const (
-	PieceTypeMask    uint32 = 0b11100000000000000000000000000000
-	FromMask         uint32 = 0b00011111100000000000000000000000
-	ToMask           uint32 = 0b00000000011111100000000000000000
-	PromotionMask    uint32 = 0b00000000000000011100000000000000
-	CaptureMask      uint32 = 0b00000000000000000011100000000000
-	EnPassantMask    uint32 = 0b00000000000000000000010000000000
-	CastleRightsMask uint32 = 0b00000000000000000000001111000000
-	CastleMask       uint32 = 0b00000000000000000000000000110000
-)
-
-const (
-	// Piece Type       0b11100000000000000000000000000000
-	PawnType   uint32 = 0b00000000000000000000000000000000
-	RookType   uint32 = 0b00100000000000000000000000000000
-	KnightType uint32 = 0b01000000000000000000000000000000
-	BishopType uint32 = 0b01100000000000000000000000000000
-	QueenType  uint32 = 0b10000000000000000000000000000000
-	KingType   uint32 = 0b10100000000000000000000000000000
-)
-
-const (
-	// Promotion             0b00000000000000011100000000000000
-	NoPromotion     uint32 = 0b00000000000000000000000000000000
-	RookPromotion   uint32 = 0b00000000000000010000000000000000
-	KnightPromotion uint32 = 0b00000000000000010100000000000000
-	BishopPromotion uint32 = 0b00000000000000011000000000000000
-	QueenPromotion  uint32 = 0b00000000000000011100000000000000
-)
-
-const (
-	// Capture             0b00000000000000000011100000000000
-	NoCapture     uint32 = 0b00000000000000000000000000000000
-	PawnCapture   uint32 = 0b00000000000000000000100000000000
-	RookCapture   uint32 = 0b00000000000000000001000000000000
-	KnightCapture uint32 = 0b00000000000000000001100000000000
-	BishopCapture uint32 = 0b00000000000000000010000000000000
-	QueenCapture  uint32 = 0b00000000000000000010100000000000
-)
-const (
-	// Castle            0b00000000000000000000000000110000
-	NoCastle    uint32 = 0b00000000000000000000000000000000
-	KingCastle  uint32 = 0b00000000000000000000000000100000
-	QueenCastle uint32 = 0b00000000000000000000000000110000
-)
-
 type Turn = bool
 
 const (
@@ -202,22 +110,22 @@ func (b *Board) Move(m Move) {
 	b.Moves = append(b.Moves, m)
 	b.HalfMoves++
 
-	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
-	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
+	var from uint32 = m.From()
+	var to uint32 = m.To()
 
 	var fromMask = uint64(1) << from
 	var toMask = uint64(1) << to
 
 	var moveMask uint64 = fromMask | toMask
 
-	noisyMove := (m&PieceTypeMask == PawnType) || (m&CaptureMask != NoCapture)
+	noisyMove := (m.PieceType() == PawnType) || (m.Capture() != NoCapture)
 	if noisyMove {
 		b.noisyMoves = append(b.noisyMoves, b.HalfMoves-1)
 	}
 
 	if b.Turn == WhiteTurn {
 		// Move piece
-		switch m & PieceTypeMask {
+		switch m.PieceType() {
 		case PawnType:
 			b.whitePawns ^= moveMask
 		case RookType:
@@ -233,7 +141,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Capture piece
-		switch m & CaptureMask {
+		switch m.Capture() {
 		case PawnCapture:
 			b.blackPawns ^= toMask
 		case RookCapture:
@@ -247,7 +155,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle promotion
-		switch m & PromotionMask {
+		switch m.Promotion() {
 		case RookPromotion:
 			b.whitePawns ^= toMask
 			b.whiteRooks |= toMask
@@ -263,7 +171,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle castling
-		switch m & CastleMask {
+		switch m.Castle() {
 		case KingCastle:
 			b.whiteRooks ^= 0b00000101
 		case QueenCastle:
@@ -271,12 +179,12 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle en passant
-		if m&EnPassantMask != 0 {
+		if m.EnPassant() {
 			b.blackPawns ^= toMask >> 8
 		}
 	} else {
 		// Move piece
-		switch m & PieceTypeMask {
+		switch m.PieceType() {
 		case PawnType:
 			b.blackPawns ^= moveMask
 		case RookType:
@@ -292,7 +200,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Capture piece
-		switch m & CaptureMask {
+		switch m.Capture() {
 		case PawnCapture:
 			b.whitePawns ^= toMask
 		case RookCapture:
@@ -306,7 +214,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle promotion
-		switch m & PromotionMask {
+		switch m.Promotion() {
 		case RookPromotion:
 			b.blackPawns ^= toMask
 			b.blackRooks |= toMask
@@ -322,7 +230,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle castling
-		switch m & CastleMask {
+		switch m.Castle() {
 		case KingCastle:
 			b.blackRooks ^= 0b00000101 << 56
 		case QueenCastle:
@@ -330,7 +238,7 @@ func (b *Board) Move(m Move) {
 		}
 
 		// Handle en passant
-		if m&EnPassantMask != 0 {
+		if m.EnPassant() {
 			b.whitePawns ^= toMask << 8
 		}
 	}
@@ -352,8 +260,8 @@ func (b *Board) Unmove() {
 	b.Moves = b.Moves[:b.HalfMoves-1]
 	b.HalfMoves--
 
-	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
-	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
+	var from uint32 = m.From()
+	var to uint32 = m.To()
 
 	var fromMask = uint64(1) << from
 	var toMask = uint64(1) << to
@@ -362,7 +270,7 @@ func (b *Board) Unmove() {
 
 	if b.Turn == WhiteTurn {
 		// Undo promotion
-		switch m & PromotionMask {
+		switch m.Promotion() {
 		case RookPromotion:
 			b.whitePawns |= toMask
 			b.whiteRooks ^= toMask
@@ -378,7 +286,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Unmove piece
-		switch m & PieceTypeMask {
+		switch m.PieceType() {
 		case PawnType:
 			b.whitePawns ^= moveMask
 		case RookType:
@@ -394,7 +302,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Uncapture piece
-		switch m & CaptureMask {
+		switch m.Capture() {
 		case PawnCapture:
 			b.blackPawns |= toMask
 		case RookCapture:
@@ -408,7 +316,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Uncastle
-		switch m & CastleMask {
+		switch m.Castle() {
 		case KingCastle:
 			b.whiteRooks ^= 0b00000101
 		case QueenCastle:
@@ -416,12 +324,12 @@ func (b *Board) Unmove() {
 		}
 
 		// Undo en passant
-		if m&EnPassantMask != 0 {
+		if m.EnPassant() {
 			b.blackPawns ^= toMask >> 8
 		}
 	} else {
 		// Undo promotion
-		switch m & PromotionMask {
+		switch m.Promotion() {
 		case RookPromotion:
 			b.blackPawns |= toMask
 			b.blackRooks ^= toMask
@@ -437,7 +345,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Unmove piece
-		switch m & PieceTypeMask {
+		switch m.PieceType() {
 		case PawnType:
 			b.blackPawns ^= moveMask
 		case RookType:
@@ -453,7 +361,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Uncapture piece
-		switch m & CaptureMask {
+		switch m.Capture() {
 		case PawnCapture:
 			b.whitePawns |= toMask
 		case RookCapture:
@@ -467,7 +375,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Uncastle
-		switch m & CastleMask {
+		switch m.Castle() {
 		case KingCastle:
 			b.blackRooks ^= 0b00000101 << 56
 		case QueenCastle:
@@ -475,7 +383,7 @@ func (b *Board) Unmove() {
 		}
 
 		// Undo en passant
-		if m&EnPassantMask != 0 {
+		if m.EnPassant() {
 			b.whitePawns ^= toMask << 8
 		}
 	}
