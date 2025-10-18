@@ -118,7 +118,10 @@ type Board struct {
 	blackQueens  uint64
 	blackKings   uint64
 
-	turn Turn
+	Turn       Turn
+	HalfMoves  int
+	Moves      []Move
+	noisyMoves []int
 }
 
 // Returns a board in the proper starting configuration
@@ -136,12 +139,20 @@ func NewBoard() Board {
 		blackBishops: 0b0010010000000000000000000000000000000000000000000000000000000000,
 		blackQueens:  0b0001000000000000000000000000000000000000000000000000000000000000,
 		blackKings:   0b0000100000000000000000000000000000000000000000000000000000000000,
+
+		Turn:       WhiteTurn,
+		HalfMoves:  0,
+		Moves:      []Move{},
+		noisyMoves: []int{},
 	}
 }
 
 func BoardFromRanks(rs [8]string, turn Turn) Board {
 	b := Board{
-		turn: turn,
+		Turn:       turn,
+		HalfMoves:  0,
+		Moves:      []Move{},
+		noisyMoves: []int{},
 	}
 
 	for i, r := range rs {
@@ -180,7 +191,17 @@ func BoardFromRanks(rs [8]string, turn Turn) Board {
 	return b
 }
 
+func (b *Board) QuietMoveCounter() int {
+	if len(b.noisyMoves) == 0 {
+		return 0
+	}
+	return b.HalfMoves - b.noisyMoves[len(b.noisyMoves)-1] - 1
+}
+
 func (b *Board) Move(m Move) {
+	b.Moves = append(b.Moves, m)
+	b.HalfMoves++
+
 	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
 	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
 
@@ -189,7 +210,12 @@ func (b *Board) Move(m Move) {
 
 	var moveMask uint64 = fromMask | toMask
 
-	if b.turn == WhiteTurn {
+	noisyMove := (m&PieceTypeMask == PawnType) || (m&CaptureMask != NoCapture)
+	if noisyMove {
+		b.noisyMoves = append(b.noisyMoves, b.HalfMoves-1)
+	}
+
+	if b.Turn == WhiteTurn {
 		// Move piece
 		switch m & PieceTypeMask {
 		case PawnType:
@@ -309,9 +335,23 @@ func (b *Board) Move(m Move) {
 		}
 	}
 
+	b.Turn = !b.Turn
 }
 
-func (b *Board) Unmove(m Move) {
+func (b *Board) Unmove() {
+	b.Turn = !b.Turn
+
+	if len(b.noisyMoves) != 0 {
+		lastNoisyMove := b.noisyMoves[len(b.noisyMoves)-1]
+		if lastNoisyMove == b.HalfMoves-1 {
+			b.noisyMoves = b.noisyMoves[:len(b.noisyMoves)-1]
+		}
+	}
+
+	m := b.Moves[b.HalfMoves-1]
+	b.Moves = b.Moves[:b.HalfMoves-1]
+	b.HalfMoves--
+
 	var from uint32 = (m & 0b00011111100000000000000000000000) >> 23
 	var to uint32 = (m & 0b00000000011111100000000000000000) >> 17
 
@@ -320,7 +360,7 @@ func (b *Board) Unmove(m Move) {
 
 	var moveMask uint64 = fromMask | toMask
 
-	if b.turn == WhiteTurn {
+	if b.Turn == WhiteTurn {
 		// Undo promotion
 		switch m & PromotionMask {
 		case RookPromotion:
