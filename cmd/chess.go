@@ -21,6 +21,6 @@ func main() {
 		fmt.Print("To: ")
 		fmt.Scanln(&to)
 
-		b.CoordinateMove(from, to, chess.NoPromotion)
+		b.DoCoordinateMove(from, to, chess.NoPromotion)
 	}
 }
