@@ -27,10 +27,13 @@ func (b *Board) LegalMoves() []Move {
 			own      = pawns | rooks | knights | bishops | queens | kings
 			enemies  = enemyPawns | enemyRooks | enemyKnights | enemyBishops | enemyQueens | enemyKings
 			occupied = own | enemies
+			empty    = ^occupied
 		)
 
 		var (
+			rank0 uint64 = 0x00000000000000ff
 			rank3 uint64 = 0x00000000ff000000
+			rank7 uint64 = 0xff00000000000000
 			file0 uint64 = 0x0101010101010101
 			file7 uint64 = 0x8080808080808080
 		)
@@ -75,7 +78,7 @@ func (b *Board) LegalMoves() []Move {
 			// Pushes
 			pushes := (board << 8)          // single push
 			pushes |= (board << 16) & rank3 // double push
-			pushes &= ^occupied             // remove occupied squares
+			pushes &= empty                 // remove occupied squares
 			addPawnMoves(pushes, i, NoCapture, false, NoCastle)
 
 			// Captures
@@ -94,6 +97,31 @@ func (b *Board) LegalMoves() []Move {
 			}
 
 			p &= p - 1
+		}
+
+		// King
+		k := kings
+		for k != 0 {
+			i := bits.TrailingZeros64(k)
+
+			board := uint64(1) << i
+
+			moves := (board & ^rank7) << 8
+			moves |= (board & ^file7) << 1
+			moves |= (board & ^rank0) >> 8
+			moves |= (board & ^file0) >> 1
+			moves |= (board & ^rank7 & ^file7) << 9
+			moves |= (board & ^file7 & ^file0) << 7
+			moves |= (board & ^rank0 & ^file0) >> 9
+			moves |= (board & ^file0 & ^file7) >> 7
+
+			addMoves(moves&empty, i, KingType, NoPromotion, NoCapture, false, NoCastle)
+
+			forEachEnemyBoard(func(enemies uint64, c Capture) {
+				addMoves(moves&enemies, i, KingType, NoPromotion, c, false, NoCastle)
+			})
+
+			k &= k - 1
 		}
 	}
 

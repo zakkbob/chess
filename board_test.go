@@ -959,6 +959,30 @@ func TestMoveGen(t *testing.T) {
 				chess.NewMove(37, 44, chess.PawnType, chess.NoPromotion, chess.RookCapture, false, chess.NoCastle),
 			},
 		},
+		{
+			Name: "King empty board",
+			Ranks: [8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"  K     ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			Turn: chess.WhiteTurn,
+			Moves: []chess.Move{
+				chess.NewMove(29, 20, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 21, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 22, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 30, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 28, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 38, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 37, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+				chess.NewMove(29, 36, chess.KingType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle),
+			},
+		},
 	}
 
 	for _, tt := range tests {
