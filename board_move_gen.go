@@ -1,7 +1,6 @@
 package chess
 
 import (
-	"fmt"
 	"math/bits"
 )
 
@@ -46,7 +45,7 @@ func (b *Board) LegalMoves() []Move {
 			}
 		}
 
-		addPawnMoves := func(cells uint64, from int, capture Capture, enPassant bool, castle Castle) {
+		addPawnMove := func(cells uint64, from int, capture Capture, enPassant bool, castle Castle) {
 			if from/8 == 6 { // promotions
 				addMoves(cells, from, PawnType, RookPromotion, capture, enPassant, castle)
 				addMoves(cells, from, PawnType, KnightPromotion, capture, enPassant, castle)
@@ -66,6 +65,97 @@ func (b *Board) LegalMoves() []Move {
 			getCaptures(enemyQueens, QueenCapture)
 		}
 
+		addMovesAndCaptures := func(cells uint64, from int, pieceType PieceType, promotion Promotion, enPassant bool, castle Castle) {
+			addMoves(cells&empty, from, pieceType, promotion, NoCapture, enPassant, castle)
+
+			forEachEnemyBoard(func(enemies uint64, c Capture) {
+				addMoves(cells&enemies, from, pieceType, promotion, c, enPassant, castle)
+			})
+
+		}
+
+		leftRay := func(i int, shift int, stopPropagating uint64) uint64 {
+			piece := uint64(1) << i
+
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves := piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+			moves |= piece
+
+			return moves
+		}
+
+		rightRay := func(i int, shift int, stopPropagating uint64) uint64 {
+			piece := uint64(1) << i
+
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves := piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+			piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+			moves |= piece
+
+			return moves
+		}
+
+		northWestRay := func(i int) uint64 {
+			return leftRay(i, 9, rank7|file7)
+		}
+
+		northRay := func(i int) uint64 {
+			return leftRay(i, 8, rank7)
+		}
+
+		northEastRay := func(i int) uint64 {
+			return leftRay(i, 7, rank7|file0)
+		}
+
+		westRay := func(i int) uint64 {
+			return leftRay(i, 1, file7)
+		}
+
+		eastRay := func(i int) uint64 {
+			return rightRay(i, 1, file0)
+		}
+
+		southWestRay := func(i int) uint64 {
+			return rightRay(i, 7, rank0|file7)
+		}
+
+		southRay := func(i int) uint64 {
+			return rightRay(i, 8, rank0)
+		}
+
+		southEastRay := func(i int) uint64 {
+			return rightRay(i, 9, rank0|file0)
+		}
+
+		rookRays := func(i int) uint64 {
+			return northRay(i) | eastRay(i) | southRay(i) | westRay(i)
+		}
+
+		bishopRays := func(i int) uint64 {
+			return northEastRay(i) | northWestRay(i) | southEastRay(i) | southWestRay(i)
+		}
+
 		// Pawns
 		p := pawns
 		for p != 0 {
@@ -79,24 +169,49 @@ func (b *Board) LegalMoves() []Move {
 			pushes := (board << 8)          // single push
 			pushes |= (board << 16) & rank3 // double push
 			pushes &= empty                 // remove occupied squares
-			addPawnMoves(pushes, i, NoCapture, false, NoCastle)
+			addPawnMove(pushes, i, NoCapture, false, NoCastle)
 
 			// Captures
 			forEachEnemyBoard(func(enemies uint64, c Capture) {
 				captures := (board & ^file7) << 9 // capture left
 				captures |= (board & ^file0) << 7 // capture right
 				captures &= enemies               // only allow enemy captures
-				addPawnMoves(captures, i, c, false, NoCastle)
+				addPawnMove(captures, i, c, false, NoCastle)
 			})
 
 			// En passant
-			fmt.Println("e", file, b.EnPassantFile)
 			if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) {
-				fmt.Println("a")
 				ms = append(ms, NewMove(i, Index(5, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, NoCastle))
 			}
 
 			p &= p - 1
+		}
+
+		// Rook
+		r := rooks
+		for r != 0 {
+			i := bits.TrailingZeros64(r)
+			moves := rookRays(i)
+			addMovesAndCaptures(moves, i, RookType, NoPromotion, false, NoCastle)
+			r &= r - 1
+		}
+
+		// Bishop
+		b := bishops
+		for b != 0 {
+			i := bits.TrailingZeros64(b)
+			moves := bishopRays(i)
+			addMovesAndCaptures(moves, i, BishopType, NoPromotion, false, NoCastle)
+			b &= b - 1
+		}
+
+		// Queen
+		q := queens
+		for q != 0 {
+			i := bits.TrailingZeros64(q)
+			moves := rookRays(i) | bishopRays(i)
+			addMovesAndCaptures(moves, i, QueenType, NoPromotion, false, NoCastle)
+			q &= q - 1
 		}
 
 		// King
@@ -115,11 +230,7 @@ func (b *Board) LegalMoves() []Move {
 			moves |= (board & ^rank0 & ^file0) >> 9
 			moves |= (board & ^file0 & ^file7) >> 7
 
-			addMoves(moves&empty, i, KingType, NoPromotion, NoCapture, false, NoCastle)
-
-			forEachEnemyBoard(func(enemies uint64, c Capture) {
-				addMoves(moves&enemies, i, KingType, NoPromotion, c, false, NoCastle)
-			})
+			addMovesAndCaptures(moves, i, KingType, NoPromotion, false, NoCastle)
 
 			k &= k - 1
 		}
