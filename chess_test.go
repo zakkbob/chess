@@ -736,6 +736,18 @@ func TestMoveUnmove(t *testing.T) {
 				assert.Equal(t, tt.board, b.RankStrings())
 				assert.Equal(t, tt.turn, b.Turn)
 			})
+
+			t.Run("Move (By coordinates)", func(t *testing.T) {
+				b.CoordinateMove(int(tt.move.From()), int(tt.move.To()), tt.move.Promotion()) // hacky fix till i rewrite tests
+				t.Log(tt.move.From(), tt.move.To(), tt.move.FromRank(), tt.move.FromFile(), tt.move.ToRank(), tt.move.ToFile(), tt.move.Promotion())
+				assert.Equal(t, tt.expected, b.RankStrings())
+				assert.Equal(t, !tt.turn, b.Turn)
+			})
+			t.Run("Unmove (By coordinates)", func(t *testing.T) {
+				b.Unmove()
+				assert.Equal(t, tt.board, b.RankStrings())
+				assert.Equal(t, tt.turn, b.Turn)
+			})
 		})
 	}
 }

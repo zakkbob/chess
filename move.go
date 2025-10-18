@@ -54,8 +54,24 @@ func (m Move) From() uint32 {
 	return (uint32(m) & FromMask) >> 23
 }
 
+func (m Move) FromRank() uint32 {
+	return m.From() / 8
+}
+
+func (m Move) FromFile() uint32 {
+	return m.From() % 8
+}
+
 func (m Move) To() uint32 {
 	return (uint32(m) & ToMask) >> 17
+}
+
+func (m Move) ToRank() uint32 {
+	return m.To() / 8
+}
+
+func (m Move) ToFile() uint32 {
+	return m.To() % 8
 }
 
 func (m Move) Promotion() Promotion {
@@ -75,11 +91,32 @@ func (m Move) Castle() Castle {
 }
 
 func NewMove(from, to int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castle Castle) Move {
-	m := Move(uint32(from<<23) | uint32(to<<17) | uint32(pieceType) | uint32(promotion) | uint32(capture) | uint32(capture))
+	m := Move(uint32(from<<23) | uint32(to<<17) | uint32(pieceType) | uint32(promotion) | uint32(capture) | uint32(castle))
 	if enPassant {
 		m |= Move(EnPassantMask)
 	}
 	return m
+}
+
+func PieceTypeToCapture(p PieceType) Capture {
+	switch p {
+	case PawnType:
+		return PawnCapture
+	case RookType:
+		return RookCapture
+	case KnightType:
+		return KnightCapture
+	case BishopType:
+		return BishopCapture
+	case QueenType:
+		return QueenCapture
+	case KingType:
+		panic("unable to convert KingType to capture - cannot capture king")
+	case NoType:
+		return NoCapture
+	default:
+		panic("unable to convert PieceType to capture - invalid piece type")
+	}
 }
 
 const (
@@ -103,6 +140,7 @@ const (
 	BishopType PieceType = 0b01100000000000000000000000000000
 	QueenType  PieceType = 0b10000000000000000000000000000000
 	KingType   PieceType = 0b10100000000000000000000000000000
+	NoType     PieceType = 0b11000000000000000000000000000000
 )
 
 type Promotion uint32

@@ -106,6 +106,74 @@ func (b *Board) QuietMoveCounter() int {
 	return b.HalfMoves - b.noisyMoves[len(b.noisyMoves)-1] - 1
 }
 
+func (b *Board) pieceType(i int) PieceType {
+	posMask := uint64(1) << i
+
+	var (
+		pawns   = b.whitePawns | b.blackPawns
+		rooks   = b.whiteRooks | b.blackRooks
+		knights = b.whiteKnights | b.blackKnights
+		bishops = b.whiteBishops | b.blackBishops
+		queens  = b.whiteQueens | b.blackQueens
+		kings   = b.whiteKings | b.blackKings
+	)
+
+	if pawns&posMask != 0 {
+		return PawnType
+	} else if rooks&posMask != 0 {
+		return RookType
+	} else if knights&posMask != 0 {
+		return KnightType
+	} else if bishops&posMask != 0 {
+		return BishopType
+	} else if queens&posMask != 0 {
+		return QueenType
+	} else if kings&posMask != 0 {
+		return KingType
+	} else {
+		return NoType
+	}
+}
+
+// Applies given move
+// Assumes it is valid and legal
+func (b *Board) CoordinateMove(from, to int, promotion Promotion) {
+	pieceType := b.pieceType(from)
+	capture := PieceTypeToCapture(b.pieceType(to))
+
+	fromRank := from / 8
+	fromFile := from % 8
+	toRank := to / 8
+	toFile := to % 8
+
+	fileDiff := toFile - fromFile
+	enPassant := (pieceType == PawnType) && (fileDiff == 1 || fileDiff == -1) && ((toRank == 2 && fromRank == 3) || (toRank == 5 && fromRank == 4))
+
+	castle := NoCastle
+
+	if pieceType == KingType {
+		if (from == 3 && to == 1) || (from == 59 && to == 57) {
+			castle = KingCastle
+		} else if (from == 3 && to == 5) || (from == 59 && to == 61) {
+			castle = QueenCastle
+		}
+	}
+
+	m := NewMove(
+		from,
+		to,
+		pieceType,
+		promotion,
+		capture,
+		enPassant,
+		castle,
+	)
+
+	b.Move(m)
+}
+
+// Applies given move
+// Assumes it is valid and legal
 func (b *Board) Move(m Move) {
 	b.Moves = append(b.Moves, m)
 	b.HalfMoves++
