@@ -68,6 +68,11 @@ func (b *Board) Move(m Move) {
 		case PawnType:
 			b.whitePawns ^= moveMask
 		case RookType:
+			if m.From() == 0 {
+				b.CastleRights.LoseWhiteKing()
+			} else if m.From() == 7 {
+				b.CastleRights.LoseWhiteQueen()
+			}
 			b.whiteRooks ^= moveMask
 		case KnightType:
 			b.whiteKnights ^= moveMask
@@ -76,6 +81,8 @@ func (b *Board) Move(m Move) {
 		case QueenType:
 			b.whiteQueens ^= moveMask
 		case KingType:
+			b.CastleRights.LoseWhiteKing()
+			b.CastleRights.LoseWhiteQueen()
 			b.whiteKings ^= moveMask
 		}
 
@@ -84,6 +91,11 @@ func (b *Board) Move(m Move) {
 		case PawnCapture:
 			b.blackPawns ^= toMask
 		case RookCapture:
+			if m.To() == 56 {
+				b.CastleRights.LoseWhiteKing()
+			} else if m.To() == 63 {
+				b.CastleRights.LoseWhiteQueen()
+			}
 			b.blackRooks ^= toMask
 		case KnightCapture:
 			b.blackKnights ^= toMask
@@ -127,6 +139,11 @@ func (b *Board) Move(m Move) {
 		case PawnType:
 			b.blackPawns ^= moveMask
 		case RookType:
+			if m.From() == 56 {
+				b.CastleRights.LoseWhiteKing()
+			} else if m.From() == 63 {
+				b.CastleRights.LoseWhiteQueen()
+			}
 			b.blackRooks ^= moveMask
 		case KnightType:
 			b.blackKnights ^= moveMask
@@ -135,6 +152,8 @@ func (b *Board) Move(m Move) {
 		case QueenType:
 			b.blackQueens ^= moveMask
 		case KingType:
+			b.CastleRights.LoseBlackKing()
+			b.CastleRights.LoseBlackQueen()
 			b.blackKings ^= moveMask
 		}
 
@@ -143,6 +162,11 @@ func (b *Board) Move(m Move) {
 		case PawnCapture:
 			b.whitePawns ^= toMask
 		case RookCapture:
+			if m.To() == 0 {
+				b.CastleRights.LoseWhiteKing()
+			} else if m.To() == 7 {
+				b.CastleRights.LoseWhiteQueen()
+			}
 			b.whiteRooks ^= toMask
 		case KnightCapture:
 			b.whiteKnights ^= toMask
@@ -198,6 +222,8 @@ func (b *Board) Unmove() {
 	m := b.Moves[b.HalfMoves-1]
 	b.Moves = b.Moves[:b.HalfMoves-1]
 	b.HalfMoves--
+
+	b.CastleRights = m.CastleRights()
 
 	if b.HalfMoves != 0 {
 		lastMove := b.Moves[b.HalfMoves-1]

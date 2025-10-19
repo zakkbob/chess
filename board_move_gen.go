@@ -40,10 +40,12 @@ func (b *Board) LegalMoves() []Move {
 	}
 
 	var (
-		own      = pawns | rooks | knights | bishops | queens | kings
-		enemies  = enemyPawns | enemyRooks | enemyKnights | enemyBishops | enemyQueens | enemyKings
-		occupied = own | enemies
-		empty    = ^occupied
+		own                      = pawns | rooks | knights | bishops | queens | kings
+		enemies                  = enemyPawns | enemyRooks | enemyKnights | enemyBishops | enemyQueens | enemyKings
+		diagonalSlidingEnemies   = enemyBishops | enemyQueens
+		orthogonalSlidingEnemies = enemyRooks | enemyQueens
+		occupied                 = own | enemies
+		empty                    = ^occupied
 	)
 
 	var (
@@ -65,7 +67,12 @@ func (b *Board) LegalMoves() []Move {
 		file7 uint64 = 0x8080808080808080
 	)
 
+	var (
+		pins [64]uint64
+	)
+
 	addMoves := func(cells uint64, from int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castle Castle) {
+		cells &= ^pins[from]
 		for cells != 0 {
 			i := bits.TrailingZeros64(cells)
 			ms = append(ms, NewMove(from, i, pieceType, promotion, capture, enPassant, castle))
@@ -103,93 +110,125 @@ func (b *Board) LegalMoves() []Move {
 		forEachEnemyBoard(func(enemies uint64, c Capture) {
 			addMoves(cells&enemies, from, pieceType, promotion, c, enPassant, castle)
 		})
-
 	}
 
-	leftRay := func(i int, shift int, stopPropagating uint64) uint64 {
+	// casts a ray in a direction which increases index
+	// stopPropogating is the bitboard which contains 1's the ray should stop at, but the ray will include that position
+	// blockPropogation is the bitboard which contains 1's the ray should stop at, but the ray won't include that position
+	leftRay := func(i int, shift int, stopPropagating uint64, blockPropogation uint64) uint64 {
 		piece := uint64(1) << i
 
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves := piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) << shift) & ^own
+		piece = ((^(stopPropagating) & piece) << shift) & ^blockPropogation
 		moves |= piece
 
 		return moves
 	}
 
-	rightRay := func(i int, shift int, stopPropagating uint64) uint64 {
+	// casts a ray in a direction which decreases index
+	// stopPropogating is the bitboard which contains 1's the ray should stop at, but the ray will include that position
+	// blockPropogation is the bitboard which contains 1's the ray should stop at, but the ray won't include that position
+	rightRay := func(i int, shift int, stopPropagation uint64, blockPropogation uint64) uint64 {
 		piece := uint64(1) << i
 
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves := piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
-		piece = ((^(stopPropagating | enemies) & piece) >> shift) & ^own
+		piece = ((^(stopPropagation) & piece) >> shift) & ^blockPropogation
 		moves |= piece
 
 		return moves
 	}
 
-	northWestRay := func(i int) uint64 {
-		return leftRay(i, 9, rank7|file7)
+	northWestRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return leftRay(i, 9, stopPropogation|rank7|file7, blockPropogation)
 	}
 
-	northRay := func(i int) uint64 {
-		return leftRay(i, 8, rank7)
+	northRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return leftRay(i, 8, stopPropogation|rank7, blockPropogation)
 	}
 
-	northEastRay := func(i int) uint64 {
-		return leftRay(i, 7, rank7|file0)
+	northEastRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return leftRay(i, 7, stopPropogation|rank7|file0, blockPropogation)
 	}
 
-	westRay := func(i int) uint64 {
-		return leftRay(i, 1, file7)
+	westRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return leftRay(i, 1, stopPropogation|file7, blockPropogation)
 	}
 
-	eastRay := func(i int) uint64 {
-		return rightRay(i, 1, file0)
+	eastRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return rightRay(i, 1, stopPropogation|file0, blockPropogation)
 	}
 
-	southWestRay := func(i int) uint64 {
-		return rightRay(i, 7, rank0|file7)
+	southWestRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return rightRay(i, 7, stopPropogation|rank0|file7, blockPropogation)
 	}
 
-	southRay := func(i int) uint64 {
-		return rightRay(i, 8, rank0)
+	southRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return rightRay(i, 8, stopPropogation|rank0, blockPropogation)
 	}
 
-	southEastRay := func(i int) uint64 {
-		return rightRay(i, 9, rank0|file0)
+	southEastRay := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return rightRay(i, 9, stopPropogation|rank0|file0, blockPropogation)
 	}
 
-	rookRays := func(i int) uint64 {
-		return northRay(i) | eastRay(i) | southRay(i) | westRay(i)
+	orthogonalRays := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return northRay(i, stopPropogation, blockPropogation) | eastRay(i, stopPropogation, blockPropogation) | southRay(i, stopPropogation, blockPropogation) | westRay(i, stopPropogation, blockPropogation)
 	}
 
-	bishopRays := func(i int) uint64 {
-		return northEastRay(i) | northWestRay(i) | southEastRay(i) | southWestRay(i)
+	diagonalRays := func(i int, stopPropogation uint64, blockPropogation uint64) uint64 {
+		return northEastRay(i, stopPropogation, blockPropogation) | northWestRay(i, stopPropogation, blockPropogation) | southEastRay(i, stopPropogation, blockPropogation) | southWestRay(i, stopPropogation, blockPropogation)
+	}
+
+	// Pin detection
+	bb := kings
+	for bb != 0 {
+		i := bits.TrailingZeros64(bb)
+
+		checkForPin := func(rayFunc func(int, uint64, uint64) uint64, slidingEnemies uint64) {
+			firstRay := rayFunc(i, own&^kings, enemies)
+			ownIndex := bits.TrailingZeros64(firstRay & own)
+			secondRay := rayFunc(ownIndex, enemies, own)
+			pinner := secondRay & slidingEnemies
+			if pinner != 0 {
+				pins[ownIndex] = ^(firstRay | secondRay)
+			}
+		}
+
+		checkForPin(northRay, orthogonalSlidingEnemies)
+		checkForPin(eastRay, orthogonalSlidingEnemies)
+		checkForPin(southRay, orthogonalSlidingEnemies)
+		checkForPin(westRay, orthogonalSlidingEnemies)
+		checkForPin(northWestRay, diagonalSlidingEnemies)
+		checkForPin(northEastRay, diagonalSlidingEnemies)
+		checkForPin(southWestRay, diagonalSlidingEnemies)
+		checkForPin(southEastRay, diagonalSlidingEnemies)
+
+		bb &= bb - 1
 	}
 
 	// Pawns
-	bb := pawns
+	bb = pawns
 	for bb != 0 {
 		i := bits.TrailingZeros64(bb)
 		rank := i / 8
@@ -220,13 +259,17 @@ func (b *Board) LegalMoves() []Move {
 
 		if b.Turn == WhiteTurn {
 			// En passant
-			if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) {
+			to := Index(5, b.EnPassantFile)
+			pinned := pins[i]&(uint64(1)<<to) != 0
+			if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
 				ms = append(ms, NewMove(i, Index(5, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, NoCastle))
 			}
 		} else {
 			// En passant
-			if b.CanEnPassant && rank == 3 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) {
-				ms = append(ms, NewMove(i, Index(2, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, NoCastle))
+			to := Index(2, b.EnPassantFile)
+			pinned := pins[i]&(uint64(1)<<to) != 0
+			if b.CanEnPassant && rank == 3 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
+				ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, NoCastle))
 			}
 
 		}
@@ -238,7 +281,7 @@ func (b *Board) LegalMoves() []Move {
 	bb = rooks
 	for bb != 0 {
 		i := bits.TrailingZeros64(bb)
-		moves := rookRays(i)
+		moves := orthogonalRays(i, enemies, own)
 		addMovesAndCaptures(moves, i, RookType, NoPromotion, false, NoCastle)
 		bb &= bb - 1
 	}
@@ -247,7 +290,7 @@ func (b *Board) LegalMoves() []Move {
 	bb = bishops
 	for bb != 0 {
 		i := bits.TrailingZeros64(bb)
-		moves := bishopRays(i)
+		moves := diagonalRays(i, enemies, own)
 		addMovesAndCaptures(moves, i, BishopType, NoPromotion, false, NoCastle)
 		bb &= bb - 1
 	}
@@ -256,7 +299,7 @@ func (b *Board) LegalMoves() []Move {
 	bb = queens
 	for bb != 0 {
 		i := bits.TrailingZeros64(bb)
-		moves := rookRays(i) | bishopRays(i)
+		moves := orthogonalRays(i, enemies, own) | diagonalRays(i, enemies, own)
 		addMovesAndCaptures(moves, i, QueenType, NoPromotion, false, NoCastle)
 		bb &= bb - 1
 	}

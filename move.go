@@ -116,10 +116,15 @@ func (m Move) EnPassant() bool {
 	return uint32(m)&EnPassantMask != 0
 }
 
+func (m Move) CastleRights() CastleRights {
+	return CastleRights(uint32(m) & CastleRightsMask)
+}
+
 func (m Move) Castle() Castle {
 	return Castle(uint32(m) & CastleMask)
 }
 
+// WARN: this disregards castle rights
 func NewMove(from, to int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castle Castle) Move {
 	m := Move(uint32(from<<23) | uint32(to<<17) | uint32(pieceType) | uint32(promotion) | uint32(capture) | uint32(castle))
 	if enPassant {
@@ -286,7 +291,7 @@ func (p Promotion) String() string {
 type Capture uint32
 
 const (
-	// Capture             0b00000000000000000011100000000000
+	// Capture              0b00000000000000000011100000000000
 	NoCapture     Capture = 0b00000000000000000000000000000000
 	PawnCapture   Capture = 0b00000000000000000000100000000000
 	RookCapture   Capture = 0b00000000000000000001000000000000
@@ -312,6 +317,48 @@ func (c Capture) String() string {
 	default:
 		panic("invalid capture")
 	}
+}
+
+type CastleRights uint32
+
+const (
+	// CastleRights                 0b00000000000000000000001111000000
+	WhiteKingCastle  CastleRights = 0b00000000000000000000001000000000
+	WhiteQueenCastle CastleRights = 0b00000000000000000000000100000000
+	BlackKingCastle  CastleRights = 0b00000000000000000000000010000000
+	BlackQueenCastle CastleRights = 0b00000000000000000000000001000000
+)
+
+func (cr CastleRights) CanWhiteKing() bool {
+	return cr&WhiteKingCastle != 0
+}
+
+func (cr CastleRights) CanWhiteQueen() bool {
+	return cr&WhiteQueenCastle != 0
+}
+
+func (cr CastleRights) CanBlackKing() bool {
+	return cr&BlackKingCastle != 0
+}
+
+func (cr CastleRights) CanBlackQueen() bool {
+	return cr&BlackQueenCastle != 0
+}
+
+func (cr *CastleRights) LoseWhiteKing() {
+	*cr &= ^WhiteKingCastle
+}
+
+func (cr *CastleRights) LoseWhiteQueen() {
+	*cr &= ^WhiteQueenCastle
+}
+
+func (cr *CastleRights) LoseBlackKing() {
+	*cr &= ^BlackKingCastle
+}
+
+func (cr *CastleRights) LoseBlackQueen() {
+	*cr &= ^BlackQueenCastle
 }
 
 type Castle uint32

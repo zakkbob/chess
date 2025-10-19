@@ -32,6 +32,7 @@ type Board struct {
 
 	Turn          Turn
 	HalfMoves     int
+	CastleRights  CastleRights
 	Moves         []Move
 	noisyMoves    []int
 	CanEnPassant  bool
