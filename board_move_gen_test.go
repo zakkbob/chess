@@ -9,6 +9,41 @@ import (
 	"github.com/zakkbob/chess"
 )
 
+func perft(b *chess.Board, depth int) int {
+	if depth == 0 {
+		return 1
+	}
+
+	counter := 0
+
+	ms := b.LegalMoves()
+	for _, m := range ms {
+		b.Move(m)
+		counter += perft(b, depth-1)
+		b.Unmove()
+	}
+	return counter
+}
+
+func TestPerft(t *testing.T) {
+	perfts := []int{
+		20,
+		400,
+		8902,
+		197281,
+		4865609,
+		//	119060324,
+	}
+
+	for i, expected := range perfts {
+		b := chess.NewBoard()
+
+		got := perft(&b, i+1)
+
+		assert.Equal(t, expected, got, "Incorrect perft result at depth %d", i+1)
+	}
+}
+
 // generates move diagram for single piece
 func moveDiagram(ms []chess.Move, t chess.Turn) string {
 	var rs [64]rune
