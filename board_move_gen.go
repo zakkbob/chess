@@ -1,7 +1,9 @@
 package chess
 
 import (
+	"fmt"
 	"math/bits"
+	"strconv"
 )
 
 func (b *Board) LegalMoves() []Move {
@@ -68,11 +70,12 @@ func (b *Board) LegalMoves() []Move {
 	)
 
 	var (
-		pins [64]uint64
+		pins           [64]uint64
+		permittedMoves uint64 = ^uint64(0)
 	)
 
 	addMoves := func(cells uint64, from int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castle Castle) {
-		cells &= ^pins[from]
+		cells &= ^pins[from] & permittedMoves
 		for cells != 0 {
 			i := bits.TrailingZeros64(cells)
 			ms = append(ms, NewMove(from, i, pieceType, promotion, capture, enPassant, castle))
@@ -227,6 +230,184 @@ func (b *Board) LegalMoves() []Move {
 		bb &= bb - 1
 	}
 
+	// pieces under enemy attack
+	var (
+		enemyAttackedSquares   uint64
+		uncheckingCaptures     uint64 = 0 // captures which are allowed
+		firstUncheckingCapture bool   = true
+	)
+	{
+		// Pawns
+		bb = enemyPawns
+		for bb != 0 {
+			i := bits.TrailingZeros64(bb)
+
+			board := uint64(1) << i
+
+			// Captures
+			var captures uint64
+			if b.Turn == BlackTurn {
+				captures |= (board & ^file7) << 9 // capture left
+				captures |= (board & ^file0) << 7 // capture right
+			} else {
+				captures |= (board & ^file7) >> 7 // capture left
+				captures |= (board & ^file0) >> 9 // capture right
+			}
+			enemyAttackedSquares |= captures
+
+			if kings&captures != 0 {
+				if firstUncheckingCapture {
+					uncheckingCaptures = board
+					firstUncheckingCapture = false
+				} else {
+					uncheckingCaptures = 0
+				}
+			}
+
+			bb &= bb - 1
+		}
+
+		// Rook
+		bb = enemyRooks
+		for bb != 0 {
+			i := bits.TrailingZeros64(bb)
+			board := uint64(1) << i
+			moves := orthogonalRays(i, own, enemies)
+			enemyAttackedSquares |= moves
+			if kings&moves != 0 {
+				if firstUncheckingCapture {
+					uncheckingCaptures = board
+					firstUncheckingCapture = false
+				} else {
+					uncheckingCaptures = 0
+				}
+			}
+			bb &= bb - 1
+		}
+
+		// Bishop
+		bb = enemyBishops
+		for bb != 0 {
+			i := bits.TrailingZeros64(bb)
+			board := uint64(1) << i
+			moves := diagonalRays(i, own, enemies)
+			enemyAttackedSquares |= moves
+			if kings&moves != 0 {
+				if firstUncheckingCapture {
+					uncheckingCaptures = board
+					firstUncheckingCapture = false
+				} else {
+					uncheckingCaptures = 0
+				}
+			}
+			bb &= bb - 1
+		}
+
+		// Queen
+		bb = enemyQueens
+		for bb != 0 {
+			i := bits.TrailingZeros64(bb)
+			board := uint64(1) << i
+			moves := orthogonalRays(i, own, enemies) | diagonalRays(i, own, enemies)
+			enemyAttackedSquares |= moves
+			if kings&moves != 0 {
+				if firstUncheckingCapture {
+					uncheckingCaptures = board
+					firstUncheckingCapture = false
+				} else {
+					uncheckingCaptures = 0
+				}
+			}
+			bb &= bb - 1
+		}
+
+		// Knight
+		bb = enemyKnights
+		for bb != 0 {
+			i := bits.TrailingZeros64(bb)
+
+			board := uint64(1) << i
+
+			moves := (^(rank7 | file1 | file0) & board) << 6
+			moves |= (^(rank7 | file6 | file7) & board) << 10
+			moves |= (^(rank7 | rank6 | file0) & board) << 15
+			moves |= (^(rank7 | rank6 | file7) & board) << 17
+			moves |= (^(rank0 | file6 | file7) & board) >> 6
+			moves |= (^(rank0 | file1 | file0) & board) >> 10
+			moves |= (^(rank0 | rank1 | file7) & board) >> 15
+			moves |= (^(rank0 | rank1 | file0) & board) >> 17
+
+			enemyAttackedSquares |= moves
+
+			if kings&moves != 0 {
+				if firstUncheckingCapture {
+					uncheckingCaptures = board
+					firstUncheckingCapture = false
+				} else {
+					uncheckingCaptures = 0
+				}
+			}
+
+			bb &= bb - 1
+		}
+
+		// King
+		bb = enemyKings
+		i := bits.TrailingZeros64(bb)
+
+		board := uint64(1) << i
+
+		moves := (^(rank7) & board) << 8
+		moves |= (^(file7) & board) << 1
+		moves |= (^(rank0) & board) >> 8
+		moves |= (^(file0) & board) >> 1
+		moves |= (^(rank7 | file7) & board) << 9
+		moves |= (^(rank7 | file0) & board) << 7
+		moves |= (^(rank0 | file0) & board) >> 9
+		moves |= (^(rank0 | file7) & board) >> 7
+
+		enemyAttackedSquares |= moves
+	}
+
+	var checkBlockingMoves = uint64(0)
+
+	// Blockable check detection
+	bb = kings
+	for bb != 0 {
+		i := bits.TrailingZeros64(bb)
+		first := true
+
+		checkForSlidingCheck := func(rayFunc func(int, uint64, uint64) uint64, slidingEnemies uint64) {
+			ray := rayFunc(i, slidingEnemies, own&^kings)
+			attacker := ray & enemies
+			if attacker != 0 {
+				if first {
+					checkBlockingMoves = ray
+				} else {
+					checkBlockingMoves = 0
+				}
+			}
+
+		}
+
+		checkForSlidingCheck(northRay, orthogonalSlidingEnemies)
+		checkForSlidingCheck(eastRay, orthogonalSlidingEnemies)
+		checkForSlidingCheck(southRay, orthogonalSlidingEnemies)
+		checkForSlidingCheck(westRay, orthogonalSlidingEnemies)
+		checkForSlidingCheck(northWestRay, diagonalSlidingEnemies)
+		checkForSlidingCheck(northEastRay, diagonalSlidingEnemies)
+		checkForSlidingCheck(southWestRay, diagonalSlidingEnemies)
+		checkForSlidingCheck(southEastRay, diagonalSlidingEnemies)
+
+		bb &= bb - 1
+	}
+
+	if kings&enemyAttackedSquares != 0 {
+		fmt.Println(strconv.FormatInt(int64(uncheckingCaptures), 2))
+		fmt.Println(strconv.FormatInt(int64(checkBlockingMoves), 2))
+		permittedMoves = uncheckingCaptures | checkBlockingMoves
+	}
+
 	// Pawns
 	bb = pawns
 	for bb != 0 {
@@ -251,9 +432,15 @@ func (b *Board) LegalMoves() []Move {
 
 		// Captures
 		forEachEnemyBoard(func(enemies uint64, c Capture) {
-			captures := (board & ^file7) << 9 // capture left
-			captures |= (board & ^file0) << 7 // capture right
-			captures &= enemies               // only allow enemy captures
+			var captures uint64
+			if b.Turn == WhiteTurn {
+				captures |= (board & ^file7) << 9 // capture left
+				captures |= (board & ^file0) << 7 // capture right
+			} else {
+				captures |= (board & ^file7) >> 7 // capture left
+				captures |= (board & ^file0) >> 9 // capture right
+			}
+			captures &= enemies // only allow enemy captures
 			addPawnMove(captures, i, c, false, NoCastle)
 		})
 
@@ -325,26 +512,39 @@ func (b *Board) LegalMoves() []Move {
 		bb &= bb - 1
 	}
 
+	addKingMoves := func(cells uint64, from int, capture Capture) {
+		for cells != 0 {
+			i := bits.TrailingZeros64(cells)
+			ms = append(ms, NewMove(from, i, KingType, NoPromotion, capture, false, NoCastle))
+			cells &= cells - 1
+		}
+	}
+
+	addKingMovesAndCaptures := func(cells uint64, from int) {
+		addKingMoves(cells&empty, from, NoCapture)
+
+		forEachEnemyBoard(func(enemies uint64, c Capture) {
+			addKingMoves(cells&enemies, from, c)
+		})
+	}
+
 	// King
 	bb = kings
-	for bb != 0 {
-		i := bits.TrailingZeros64(bb)
+	i := bits.TrailingZeros64(bb)
 
-		board := uint64(1) << i
+	board := uint64(1) << i
 
-		moves := (^(rank7) & board) << 8
-		moves |= (^(file7) & board) << 1
-		moves |= (^(rank0) & board) >> 8
-		moves |= (^(file0) & board) >> 1
-		moves |= (^(rank7 | file7) & board) << 9
-		moves |= (^(rank7 | file0) & board) << 7
-		moves |= (^(rank0 | file0) & board) >> 9
-		moves |= (^(rank0 | file7) & board) >> 7
+	moves := (^(rank7) & board) << 8
+	moves |= (^(file7) & board) << 1
+	moves |= (^(rank0) & board) >> 8
+	moves |= (^(file0) & board) >> 1
+	moves |= (^(rank7 | file7) & board) << 9
+	moves |= (^(rank7 | file0) & board) << 7
+	moves |= (^(rank0 | file0) & board) >> 9
+	moves |= (^(rank0 | file7) & board) >> 7
+	moves &= ^enemyAttackedSquares
 
-		addMovesAndCaptures(moves, i, KingType, NoPromotion, false, NoCastle)
-
-		bb &= bb - 1
-	}
+	addKingMovesAndCaptures(moves, i)
 
 	return ms
 }

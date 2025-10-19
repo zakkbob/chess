@@ -409,3 +409,19 @@ func TestSymmetricOnePieceMoveGen(t *testing.T) {
 		})
 	}
 }
+
+func TestPinnedPiece(t *testing.T) {
+	b := chess.BoardFromRanks([8]string{
+		"        ",
+		"        ",
+		"q       ",
+		" R      ",
+		"   q    ",
+		" n      ",
+		" RqR    ",
+		"K       ",
+	}, chess.WhiteTurn)
+
+	t.Log(b.LegalMoves())
+	t.Fail()
+}
