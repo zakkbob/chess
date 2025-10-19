@@ -92,7 +92,7 @@ func getRanksAndMoves(ranks [8]string) ([8]string, []chess.Move) {
 	}
 
 	for _, end := range ends {
-		moves = append(moves, chess.NewMove(start, end, pieceType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+		moves = append(moves, chess.NewMove(start, end, pieceType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastleRights, chess.NoCastle))
 	}
 
 	return ranks, moves

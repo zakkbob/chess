@@ -1,9 +1,7 @@
 package chess
 
 import (
-	"fmt"
 	"math/bits"
-	"strconv"
 )
 
 func (b *Board) LegalMoves() []Move {
@@ -78,7 +76,7 @@ func (b *Board) LegalMoves() []Move {
 		cells &= ^pins[from] & permittedMoves
 		for cells != 0 {
 			i := bits.TrailingZeros64(cells)
-			ms = append(ms, NewMove(from, i, pieceType, promotion, capture, enPassant, castle))
+			ms = append(ms, NewMove(from, i, pieceType, promotion, capture, enPassant, b.CastleRights, castle))
 			cells &= cells - 1
 		}
 	}
@@ -403,8 +401,6 @@ func (b *Board) LegalMoves() []Move {
 	}
 
 	if kings&enemyAttackedSquares != 0 {
-		fmt.Println(strconv.FormatInt(int64(uncheckingCaptures), 2))
-		fmt.Println(strconv.FormatInt(int64(checkBlockingMoves), 2))
 		permittedMoves = uncheckingCaptures | checkBlockingMoves
 	}
 
@@ -449,14 +445,14 @@ func (b *Board) LegalMoves() []Move {
 			to := Index(5, b.EnPassantFile)
 			pinned := pins[i]&(uint64(1)<<to) != 0
 			if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
-				ms = append(ms, NewMove(i, Index(5, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, NoCastle))
+				ms = append(ms, NewMove(i, Index(5, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
 			}
 		} else {
 			// En passant
 			to := Index(2, b.EnPassantFile)
 			pinned := pins[i]&(uint64(1)<<to) != 0
 			if b.CanEnPassant && rank == 3 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
-				ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, NoCastle))
+				ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
 			}
 
 		}
@@ -515,7 +511,7 @@ func (b *Board) LegalMoves() []Move {
 	addKingMoves := func(cells uint64, from int, capture Capture) {
 		for cells != 0 {
 			i := bits.TrailingZeros64(cells)
-			ms = append(ms, NewMove(from, i, KingType, NoPromotion, capture, false, NoCastle))
+			ms = append(ms, NewMove(from, i, KingType, NoPromotion, capture, false, b.CastleRights, NoCastle))
 			cells &= cells - 1
 		}
 	}
@@ -545,6 +541,26 @@ func (b *Board) LegalMoves() []Move {
 	moves &= ^enemyAttackedSquares
 
 	addKingMovesAndCaptures(moves, i)
+
+	// Castling
+	if enemyAttackedSquares&kings == 0 {
+		if b.Turn == WhiteTurn {
+			if b.CastleRights.CanWhiteKing() && ((occupied|enemyAttackedSquares)&0b00000110 == 0) {
+				ms = append(ms, NewMove(i, 1, KingType, NoPromotion, NoCapture, false, b.CastleRights, KingCastle))
+			}
+			if b.CastleRights.CanWhiteQueen() && ((occupied|enemyAttackedSquares)&0b01110000 == 0) {
+				ms = append(ms, NewMove(i, 5, KingType, NoPromotion, NoCapture, false, b.CastleRights, QueenCastle))
+			}
+		} else {
+			if b.CastleRights.CanBlackKing() && ((occupied|enemyAttackedSquares)&(0b00000110<<56) == 0) {
+				ms = append(ms, NewMove(i, 57, KingType, NoPromotion, NoCapture, false, b.CastleRights, KingCastle))
+			}
+			if b.CastleRights.CanBlackQueen() && ((occupied|enemyAttackedSquares)&(0b01110000<<56) == 0) {
+				ms = append(ms, NewMove(i, 61, KingType, NoPromotion, NoCapture, false, b.CastleRights, QueenCastle))
+			}
+		}
+
+	}
 
 	return ms
 }

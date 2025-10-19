@@ -124,9 +124,8 @@ func (m Move) Castle() Castle {
 	return Castle(uint32(m) & CastleMask)
 }
 
-// WARN: this disregards castle rights
-func NewMove(from, to int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castle Castle) Move {
-	m := Move(uint32(from<<23) | uint32(to<<17) | uint32(pieceType) | uint32(promotion) | uint32(capture) | uint32(castle))
+func NewMove(from, to int, pieceType PieceType, promotion Promotion, capture Capture, enPassant bool, castleRights CastleRights, castle Castle) Move {
+	m := Move(uint32(from<<23) | uint32(to<<17) | uint32(pieceType) | uint32(promotion) | uint32(capture) | uint32(castleRights) | uint32(castle))
 	if enPassant {
 		m |= Move(EnPassantMask)
 	}
@@ -323,6 +322,7 @@ type CastleRights uint32
 
 const (
 	// CastleRights                 0b00000000000000000000001111000000
+	NoCastleRights   CastleRights = 0b00000000000000000000000000000000
 	WhiteKingCastle  CastleRights = 0b00000000000000000000001000000000
 	WhiteQueenCastle CastleRights = 0b00000000000000000000000100000000
 	BlackKingCastle  CastleRights = 0b00000000000000000000000010000000

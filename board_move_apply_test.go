@@ -125,11 +125,11 @@ func TestDoublePush(t *testing.T) {
 
 	assert.Equal(t, false, b.CanEnPassant)
 
-	b.Move(chess.NewMove(9, 25, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+	b.Move(chess.NewMove(9, 25, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastleRights, chess.NoCastle))
 	assert.Equal(t, true, b.CanEnPassant)
 	assert.Equal(t, 1, b.EnPassantFile)
 
-	b.Move(chess.NewMove(55, 47, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+	b.Move(chess.NewMove(55, 47, chess.PawnType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastleRights, chess.NoCastle))
 	assert.Equal(t, false, b.CanEnPassant)
 
 	b.Unmove()

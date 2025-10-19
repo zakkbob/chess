@@ -31,6 +31,7 @@ func (b *Board) DoCoordinateMove(from, to int, promotion Promotion) {
 		promotion,
 		capture,
 		enPassant,
+		b.CastleRights,
 		castle,
 	)
 
