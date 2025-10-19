@@ -239,7 +239,7 @@ func (b *Board) LegalMoves() []Move {
 			moves |= (^(rank0 | file6 | file7) & board) >> 6
 			moves |= (^(rank0 | file1 | file0) & board) >> 10
 			moves |= (^(rank0 | rank1 | file7) & board) >> 15
-			moves |= (^(rank0 | rank1 | file1) & board) >> 17
+			moves |= (^(rank0 | rank1 | file0) & board) >> 17
 
 			addMovesAndCaptures(moves, i, KnightType, NoPromotion, false, NoCastle)
 
@@ -253,14 +253,14 @@ func (b *Board) LegalMoves() []Move {
 
 			board := uint64(1) << i
 
-			moves := (board & ^rank7) << 8
-			moves |= (board & ^file7) << 1
-			moves |= (board & ^rank0) >> 8
-			moves |= (board & ^file0) >> 1
-			moves |= (board & ^rank7 & ^file7) << 9
-			moves |= (board & ^file7 & ^file0) << 7
-			moves |= (board & ^rank0 & ^file0) >> 9
-			moves |= (board & ^file0 & ^file7) >> 7
+			moves := (^(rank7) & board) << 8
+			moves |= (^(file7) & board) << 1
+			moves |= (^(rank0) & board) >> 8
+			moves |= (^(file0) & board) >> 1
+			moves |= (^(rank7 | file7) & board) << 9
+			moves |= (^(rank7 | file0) & board) << 7
+			moves |= (^(rank0 | file0) & board) >> 9
+			moves |= (^(rank0 | file7) & board) >> 7
 
 			addMovesAndCaptures(moves, i, KingType, NoPromotion, false, NoCastle)
 

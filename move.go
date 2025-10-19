@@ -1,6 +1,8 @@
 package chess
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // --- Move Representation ---
 // Bits Overview (inclusive)
@@ -49,7 +51,7 @@ import "strconv"
 type Move uint32
 
 func (m Move) String() string {
-	s := strconv.Itoa(int(m.From())) + " to " + strconv.Itoa(int(m.To()))
+	s := m.PieceType().String() + " from " + strconv.Itoa(int(m.From())) + " to " + strconv.Itoa(int(m.To()))
 
 	if m.Capture() != NoCapture {
 		s += ", captures " + m.Capture().String()
@@ -149,6 +151,88 @@ const (
 	KingType   PieceType = 0b10100000000000000000000000000000
 	NoType     PieceType = 0b11000000000000000000000000000000
 )
+
+func PieceTypeFromRune(r rune) PieceType {
+	switch r {
+	case 'P', 'p':
+		return PawnType
+	case 'R', 'r':
+		return RookType
+	case 'N', 'n':
+		return KnightType
+	case 'B', 'b':
+		return BishopType
+	case 'Q', 'q':
+		return QueenType
+	case 'K', 'k':
+		return KingType
+	default:
+		return NoType
+	}
+}
+
+func (p PieceType) Symbol(t Turn) rune {
+	if t == WhiteTurn {
+		switch p {
+		case PawnType:
+			return 'P'
+		case RookType:
+			return 'R'
+		case KnightType:
+			return 'N'
+		case BishopType:
+			return 'B'
+		case QueenType:
+			return 'Q'
+		case KingType:
+			return 'K'
+		case NoType:
+			return ' '
+		default:
+			panic("unable to get PieceType symbol - invalid PieceType")
+		}
+	} else {
+		switch p {
+		case PawnType:
+			return 'p'
+		case RookType:
+			return 'r'
+		case KnightType:
+			return 'n'
+		case BishopType:
+			return 'b'
+		case QueenType:
+			return 'q'
+		case KingType:
+			return 'k'
+		case NoType:
+			return ' '
+		default:
+			panic("unable to get PieceType symbol - invalid PieceType")
+		}
+	}
+}
+
+func (p PieceType) String() string {
+	switch p {
+	case PawnType:
+		return "pawn"
+	case RookType:
+		return "rook"
+	case KnightType:
+		return "knight"
+	case BishopType:
+		return "bishop"
+	case QueenType:
+		return "queen"
+	case KingType:
+		return "king"
+	case NoType:
+		return "none"
+	default:
+		panic("cannot convert PieceType to string - unknown piece type")
+	}
+}
 
 func (p PieceType) ToCapture() Capture {
 	switch p {

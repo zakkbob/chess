@@ -1,6 +1,8 @@
 package chess_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -877,6 +879,400 @@ func TestMoveCounters(t *testing.T) {
 		require.Equal(t, b.QuietMoveCounter(), tt.QuietMoveCounter, "Quiet move counter wrong for unmove pawn push (returning to move %d)", i+1)
 	}
 
+}
+
+// generates move diagram for single piece
+func moveDiagram(ms []chess.Move) string {
+	var rs [64]rune
+
+	for i := range 64 {
+		rs[i] = '.'
+	}
+
+	for _, m := range ms {
+		rs[63-m.To()] = '*'
+		rs[63-m.From()] = m.PieceType().Symbol(chess.WhiteTurn)
+	}
+
+	var b strings.Builder
+	b.WriteString("+--------+\n")
+	for i, r := range rs {
+		if i%8 == 0 {
+			b.WriteRune('|')
+		}
+		b.WriteRune(r)
+		if i%8 == 7 {
+			b.WriteRune('|')
+			b.WriteRune('\n')
+		}
+	}
+	b.WriteString("+--------+\n")
+
+	return b.String()
+}
+
+// test empty boards like this
+// stars are valid end positions
+//
+//   - *
+//   - *
+//     N
+//   - *
+//   - *
+func TestOnePieceMoveGen(t *testing.T) {
+	getRanksAndMoves := func(ranks [8]string) ([8]string, []chess.Move) {
+		var start int
+		var ends []int
+		var moves []chess.Move
+		var pieceType chess.PieceType
+		for i, rank := range ranks {
+			for j, cell := range rank {
+				switch cell {
+				case '*':
+					ends = append(ends, 63-chess.Index(i, j))
+				case 'P', 'p', 'R', 'r', 'N', 'n', 'B', 'b', 'Q', 'q', 'K', 'k':
+					pieceType = chess.PieceTypeFromRune(cell)
+					start = 63 - chess.Index(i, j)
+				}
+			}
+		}
+
+		for _, end := range ends {
+			moves = append(moves, chess.NewMove(start, end, pieceType, chess.NoPromotion, chess.NoCapture, false, chess.NoCastle))
+		}
+
+		return ranks, moves
+	}
+
+	tests := []struct {
+		Ranks [8]string
+		Turn  chess.Turn
+	}{
+		{
+			[8]string{
+				"  * *   ",
+				" *   *  ",
+				"   N    ",
+				" *   *  ",
+				"  * *   ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"N       ",
+				"  *     ",
+				" *      ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				" N      ",
+				"   *    ",
+				"* *     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"   *    ",
+				" N      ",
+				"   *    ",
+				"* *     ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"       N",
+				"     *  ",
+				"      * ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"    *   ",
+				"      N ",
+				"    *   ",
+				"     * *",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"      * ",
+				"     *  ",
+				"       N",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				" *      ",
+				"  *     ",
+				"N       ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"   *    ",
+				"   *    ",
+				"   *    ",
+				"***R****",
+				"   *    ",
+				"   *    ",
+				"   *    ",
+				"   *    ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"R*******",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"       *",
+				"*******R",
+				"       *",
+				"       *",
+				"       *",
+				"       *",
+				"       *",
+				"       *",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"*       ",
+				"R*******",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				" *      ",
+				" *      ",
+				" P      ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"      * ",
+				"      P ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				" *     *",
+				"  *   * ",
+				"   * *  ",
+				"    B   ",
+				"   * *  ",
+				"  *   * ",
+				" *     *",
+				"*       ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"      * ",
+				"     *  ",
+				"    *   ",
+				"   *    ",
+				"  *     ",
+				" *      ",
+				"B       ",
+				" *      ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				" *      ",
+				"  *     ",
+				"   *    ",
+				"    *   ",
+				"     *  ",
+				"      * ",
+				"       B",
+				"      * ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"   *   *",
+				"*  *  * ",
+				" * * *  ",
+				"  ***   ",
+				"***Q****",
+				"  ***   ",
+				" * * *  ",
+				"*  *  * ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				" *      ",
+				" *     *",
+				" *    * ",
+				" *   *  ",
+				" *  *   ",
+				" * *    ",
+				"***     ",
+				"*Q******",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"  ***   ",
+				"  *K*   ",
+				"  ***   ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"**      ",
+				"K*      ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"K*      ",
+				"**      ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"      *K",
+				"      **",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+			},
+			chess.WhiteTurn,
+		},
+		{
+			[8]string{
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"        ",
+				"      **",
+				"      *K",
+			},
+			chess.WhiteTurn,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("Test %d", i), func(t *testing.T) {
+			ranks, expected := getRanksAndMoves(tt.Ranks)
+			b := chess.BoardFromRanks(ranks, tt.Turn)
+			ms := b.LegalMoves()
+			if !assert.ElementsMatch(t, expected, ms) {
+				t.Logf("Expected \n%s\n", moveDiagram(expected))
+				t.Logf("Got \n%s\n", moveDiagram(ms))
+			}
+		})
+	}
 }
 
 func TestMoveGen(t *testing.T) {
