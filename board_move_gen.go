@@ -279,7 +279,7 @@ func (b *Board) LegalMoves() []Move {
 		for bb != 0 {
 			i := bits.TrailingZeros64(bb)
 			board := uint64(1) << i
-			moves := orthogonalRays(i, (own|enemies)&^(board|kings), 0) //handle properly, current the ray passes through the king
+			moves := orthogonalRays(i, (own|enemies)&^(board|kings), 0) //WARN: doesn't handle properly, current the ray passes through the king
 			enemyAttackedSquares |= moves
 			bb &= bb - 1
 		}
@@ -396,10 +396,6 @@ func (b *Board) LegalMoves() []Move {
 
 		bb &= bb - 1
 	}
-
-	//fmt.Println("attacked: ", strconv.FormatInt(int64(enemyAttackedSquares), 2))
-	//fmt.Println("pins: ", pins)
-	//fmt.Println("permitted:", permittedMoves, strconv.FormatInt(int64(permittedMoves), 2))
 
 	// Check if en passant will put king in check
 	enPassantPutsKingInCheck := false
@@ -588,10 +584,6 @@ func (b *Board) LegalMoves() []Move {
 
 	addKingMovesAndCaptures(moves, i)
 
-	//fmt.Println(b.CastleRights.CanWhiteKing())
-	//fmt.Println(b.CastleRights.CanWhiteQueen())
-	//fmt.Println(b.CastleRights.CanBlackKing())
-	//fmt.Println(b.CastleRights.CanBlackQueen())
 	// Castling
 	if enemyAttackedSquares&kings == 0 {
 		if b.Turn == WhiteTurn {
