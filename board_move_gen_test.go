@@ -87,7 +87,7 @@ func TestPerft(t *testing.T) {
 				2812,
 				43238,
 				674624,
-				//11030083,
+				11030083,
 			},
 			Board: chess.BoardFromRanks(
 				[8]string{

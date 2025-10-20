@@ -431,13 +431,13 @@ func (b *Board) LegalMoves() []Move {
 		case rankDiff == 0 && fileDiff > 0: // west
 			ray = westRay(kingIndex, occupied&^(kings|capturingPawn|capturedPiece), 0) & orthogonalSlidingEnemies
 		case rankDiff == fileDiff && rankDiff > 0: // north-west
-			ray = northWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+			ray = northWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & diagonalSlidingEnemies
 		case rankDiff == -fileDiff && rankDiff > 0: // north-east
-			ray = northEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+			ray = northEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & diagonalSlidingEnemies
 		case rankDiff == fileDiff && rankDiff < 0: // south-east
-			ray = southEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+			ray = southEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & diagonalSlidingEnemies
 		case rankDiff == -fileDiff && rankDiff < 0: // south-west
-			ray = southWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+			ray = southWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & diagonalSlidingEnemies
 		default:
 
 		}
