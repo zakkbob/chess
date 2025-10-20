@@ -428,6 +428,31 @@ func NewCastleRights(whiteKing, whiteQueen, blackKing, blackQueen bool) CastleRi
 	return cr
 }
 
+func CastleRightsFromString(s string) CastleRights {
+	if s == "-" {
+		return NoCastleRights
+	}
+
+	cr := NoCastleRights
+
+	for _, r := range s {
+		switch r {
+		case 'K':
+			cr |= WhiteKingCastle
+		case 'Q':
+			cr |= WhiteQueenCastle
+		case 'k':
+			cr |= BlackKingCastle
+		case 'q':
+			cr |= BlackQueenCastle
+		default:
+			panic("unknown side")
+		}
+	}
+
+	return cr
+}
+
 func (cr CastleRights) CanWhiteKing() bool {
 	return cr&WhiteKingCastle != 0
 }

@@ -243,14 +243,14 @@ func (b *Board) Unmove() {
 		}
 	}
 
-	m := b.Moves[b.HalfMoves-1]
-	b.Moves = b.Moves[:b.HalfMoves-1]
+	m := b.Moves[len(b.Moves)-1]
+	b.Moves = b.Moves[:len(b.Moves)-1]
 	b.HalfMoves--
 
 	b.CastleRights = m.CastleRights()
 
-	if b.HalfMoves != 0 {
-		lastMove := b.Moves[b.HalfMoves-1]
+	if len(b.Moves) != 0 {
+		lastMove := b.Moves[len(b.Moves)-1]
 		b.CanEnPassant = lastMove.IsDoublePush()
 		b.EnPassantFile = int(lastMove.ToFile())
 	} else {

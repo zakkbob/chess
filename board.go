@@ -1,6 +1,8 @@
 package chess
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -61,6 +63,111 @@ func NewBoard() Board {
 		noisyMoves:   []int{},
 		CastleRights: AllCastleRights,
 	}
+}
+
+func BoardFromFEN(fen string) Board {
+	parts := strings.Split(fen, " ")
+	if len(parts) != 6 && len(parts) != 4 {
+		panic("invalid FEN!")
+	}
+
+	b := Board{
+		Moves:      []Move{},
+		noisyMoves: []int{},
+	}
+
+	pieces := parts[0]
+
+	i := 0
+	for _, symbol := range pieces {
+		posMask := uint64(1) << (63 - i)
+		switch symbol {
+		case '/':
+			continue
+		case 'P':
+			b.whitePawns |= posMask
+		case 'R':
+			b.whiteRooks |= posMask
+		case 'N':
+			b.whiteKnights |= posMask
+		case 'B':
+			b.whiteBishops |= posMask
+		case 'Q':
+			b.whiteQueens |= posMask
+		case 'K':
+			b.whiteKings |= posMask
+		case 'p':
+			b.blackPawns |= posMask
+		case 'r':
+			b.blackRooks |= posMask
+		case 'n':
+			b.blackKnights |= posMask
+		case 'b':
+			b.blackBishops |= posMask
+		case 'q':
+			b.blackQueens |= posMask
+		case 'k':
+			b.blackKings |= posMask
+		case '1':
+
+		case '2':
+			i += 1
+		case '3':
+			i += 2
+		case '4':
+			i += 3
+		case '5':
+			i += 4
+		case '6':
+			i += 5
+		case '7':
+			i += 6
+		case '8':
+			i += 7
+		default:
+			panic(fmt.Sprint("unknown piece", symbol))
+		}
+		i++
+	}
+
+	active := parts[1]
+	switch active {
+	case "w", "W":
+		b.Turn = WhiteTurn
+	case "b", "B":
+		b.Turn = BlackTurn
+	default:
+		panic("unknown colour")
+	}
+
+	b.CastleRights = CastleRightsFromString(parts[2])
+
+	enPassantTarget := parts[3]
+	if enPassantTarget != "-" {
+		i := IndexFromAlgebraic(enPassantTarget)
+		b.CanEnPassant = true
+		b.EnPassantFile = i % 8
+	}
+
+	if len(parts) == 6 {
+		fullMoveClock, err := strconv.Atoi(parts[5])
+		if err != nil {
+			panic("aghh")
+		}
+		if b.Turn == WhiteTurn {
+			b.HalfMoves = (fullMoveClock - 1) * 2 
+		} else {
+			b.HalfMoves = (fullMoveClock-1)*2 + 1
+		}
+
+		halfMoveClock, err := strconv.Atoi(parts[4])
+		if err != nil {
+			panic("aghhhh")
+		}
+		b.noisyMoves = append(b.noisyMoves, b.HalfMoves-halfMoveClock)
+	}
+
+	return b
 }
 
 func BoardFromRanks(rs [8]string, turn Turn, castleRights CastleRights) Board {
