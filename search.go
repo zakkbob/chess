@@ -26,6 +26,9 @@ func Search(b Board, depth int) Move {
 func negamax(b Board, depth int) int {
 	ms := b.LegalMoves()
 	value := -9223372036854775808
+	if len(ms) == 0 {
+		return value
+	}
 	if depth == 0 {
 		return Evaluate(b)
 	}
