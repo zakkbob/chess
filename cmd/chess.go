@@ -27,17 +27,14 @@ func perft(b *chess.Board, depth int) int {
 }
 
 func perftCommand(args []string) {
-	b := chess.NewBoard()
-
-	//fmt.Println(b.String())
-
 	depth, err := strconv.Atoi(args[0])
 	if err != nil {
 		fmt.Println("Cannot parse depth: ", args[0])
 		os.Exit(1)
 	}
 
-	//fen := os.Args[1]
+	fen := args[1]
+	b := chess.BoardFromFEN(fen)
 
 	if len(args) == 3 {
 		moves := args[2]

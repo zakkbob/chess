@@ -125,7 +125,7 @@ func BoardFromFEN(fen string) Board {
 		case '8':
 			i += 7
 		default:
-			panic(fmt.Sprint("unknown piece", symbol))
+			panic(fmt.Sprint("unknown piece", rune(symbol)))
 		}
 		i++
 	}
@@ -155,7 +155,7 @@ func BoardFromFEN(fen string) Board {
 			panic("aghh")
 		}
 		if b.Turn == WhiteTurn {
-			b.HalfMoves = (fullMoveClock - 1) * 2 
+			b.HalfMoves = (fullMoveClock - 1) * 2
 		} else {
 			b.HalfMoves = (fullMoveClock-1)*2 + 1
 		}
