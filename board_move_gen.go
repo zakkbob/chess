@@ -422,9 +422,9 @@ func (b *Board) LegalMoves() []Move {
 
 		var ray uint64 = 0
 		switch {
-		case fileDiff == 0 && rankDiff > 0: // north
+		case fileDiff == 0 && rankDiff > 0 && b.Turn != WhiteTurn: // north, on white turn, an enpassant will block nort ray
 			ray = northRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
-		case fileDiff == 0 && rankDiff < 0: // south
+		case fileDiff == 0 && rankDiff < 0 && b.Turn != BlackTurn: // south, on black turn, an en passant will block a south rau
 			ray = southRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
 		case rankDiff == 0 && fileDiff < 0: // east
 			ray = eastRay(kingIndex, occupied&^(kings|capturingPawn|capturedPiece), 0) & orthogonalSlidingEnemies
