@@ -26,31 +26,21 @@ func perft(b *chess.Board, depth int) int {
 	return counter
 }
 
-func main() {
-	b := chess.BoardFromRanks(
-		[8]string{
-			"rnbq k r",
-			"pp Pbppp",
-			"  p     ",
-			"        ",
-			"  B     ",
-			"        ",
-			"PPP NnPP",
-			"RNBQK  R",
-		},
-		chess.WhiteTurn,
-		chess.NewCastleRights(true, true, false, false),
-	)
+func perftCommand(args []string) {
+	b := chess.NewBoard()
 
 	//fmt.Println(b.String())
 
-	depth, err := strconv.Atoi(os.Args[1])
+	depth, err := strconv.Atoi(args[0])
 	if err != nil {
-		os.Exit(depth)
+		fmt.Println("Cannot parse depth: ", args[0])
+		os.Exit(1)
 	}
-	//fen := os.Args[2]
-	if len(os.Args) == 4 {
-		moves := os.Args[3]
+
+	//fen := os.Args[1]
+
+	if len(args) == 3 {
+		moves := args[2]
 
 		for a := range strings.SplitSeq(moves, " ") {
 			b.DoAlgebraicMove(a)
@@ -66,11 +56,13 @@ func main() {
 		fmt.Println(m.String(), nodes)
 		counter += nodes
 	}
+
 	fmt.Println()
 	fmt.Println(counter)
+}
 
-	os.Exit(0)
-
+func playCommand(args []string) {
+	b := chess.NewBoard()
 	for {
 		fmt.Println(b.String())
 
@@ -93,4 +85,18 @@ func main() {
 		b.DoCoordinateMove(from, to, chess.NoPromotion)
 
 	}
+
+}
+
+func main() {
+	switch os.Args[1] {
+	case "perft":
+		perftCommand(os.Args[2:])
+	case "play":
+		playCommand(os.Args[2:])
+	default:
+		fmt.Println("expected 'perft' or 'play' subcommands")
+		os.Exit(1)
+	}
+
 }
