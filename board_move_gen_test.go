@@ -3,6 +3,7 @@ package chess_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,36 @@ func perft(b *chess.Board, depth int) int {
 		b.Unmove()
 	}
 	return counter
+}
+
+func moveCount(b *chess.Board, depth int) int {
+	ms := b.LegalMoves()
+	counter := len(ms)
+
+	if depth == 1 {
+		return counter
+	}
+
+	for _, m := range ms {
+		b.Move(m)
+		moves := moveCount(b, depth-1)
+		counter += moves
+		b.Unmove()
+	}
+	return counter
+}
+
+func BenchmarkPerft(b *testing.B) {
+	bd := chess.NewBoard()
+	b.ResetTimer()
+
+	start := time.Now()
+	moves := moveCount(&bd, 6)
+
+	elapsed := time.Since(start)
+
+	b.ReportMetric(float64(moves)/(elapsed.Seconds()), "moves/s")
+	b.ReportMetric(float64(elapsed.Nanoseconds())/float64(moves), "ns/move")
 }
 
 func TestPerft(t *testing.T) {
