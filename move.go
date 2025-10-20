@@ -411,6 +411,23 @@ const (
 	BlackQueenCastle CastleRights = 0b00000000000000000000000001000000
 )
 
+func NewCastleRights(whiteKing, whiteQueen, blackKing, blackQueen bool) CastleRights {
+	cr := NoCastleRights
+	if whiteKing {
+		cr |= WhiteKingCastle
+	}
+	if whiteQueen {
+		cr |= WhiteQueenCastle
+	}
+	if blackKing {
+		cr |= BlackKingCastle
+	}
+	if blackQueen {
+		cr |= BlackQueenCastle
+	}
+	return cr
+}
+
 func (cr CastleRights) CanWhiteKing() bool {
 	return cr&WhiteKingCastle != 0
 }

@@ -29,17 +29,17 @@ func perft(b *chess.Board, depth int) int {
 func main() {
 	b := chess.BoardFromRanks(
 		[8]string{
-			"        ",
+			"rnbq k r",
+			"pp Pbppp",
 			"  p     ",
-			"   p    ",
-			"KP     r",
-			" R   p k",
 			"        ",
-			"    P P ",
+			"  B     ",
 			"        ",
+			"PPP NnPP",
+			"RNBQK  R",
 		},
 		chess.WhiteTurn,
-		chess.NoCastleRights,
+		chess.NewCastleRights(true, true, false, false),
 	)
 
 	//fmt.Println(b.String())
