@@ -1,9 +1,13 @@
 package chess
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
+)
+
+var (
+	ErrInvalidFEN = errors.New("Invalid FEN")
 )
 
 func Index(rank, file int) int {
@@ -65,10 +69,10 @@ func NewBoard() Board {
 	}
 }
 
-func BoardFromFEN(fen string) Board {
+func BoardFromFEN(fen string) (Board, error) {
 	parts := strings.Split(fen, " ")
 	if len(parts) != 6 && len(parts) != 4 {
-		panic("invalid FEN!")
+		return Board{}, ErrInvalidFEN
 	}
 
 	b := Board{
@@ -125,7 +129,7 @@ func BoardFromFEN(fen string) Board {
 		case '8':
 			i += 7
 		default:
-			panic(fmt.Sprint("unknown piece", rune(symbol)))
+			return Board{}, ErrInvalidFEN
 		}
 		i++
 	}
@@ -137,7 +141,7 @@ func BoardFromFEN(fen string) Board {
 	case "b", "B":
 		b.Turn = BlackTurn
 	default:
-		panic("unknown colour")
+		return Board{}, ErrInvalidFEN
 	}
 
 	b.CastleRights = CastleRightsFromString(parts[2])
@@ -152,7 +156,7 @@ func BoardFromFEN(fen string) Board {
 	if len(parts) == 6 {
 		fullMoveClock, err := strconv.Atoi(parts[5])
 		if err != nil {
-			panic("aghh")
+			return Board{}, ErrInvalidFEN
 		}
 		if b.Turn == WhiteTurn {
 			b.HalfMoves = (fullMoveClock - 1) * 2
@@ -162,12 +166,12 @@ func BoardFromFEN(fen string) Board {
 
 		halfMoveClock, err := strconv.Atoi(parts[4])
 		if err != nil {
-			panic("aghhhh")
+			return Board{}, ErrInvalidFEN
 		}
 		b.noisyMoves = append(b.noisyMoves, b.HalfMoves-halfMoveClock)
 	}
 
-	return b
+	return b, nil
 }
 
 func BoardFromRanks(rs [8]string, turn Turn, castleRights CastleRights) Board {

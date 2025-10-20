@@ -34,7 +34,11 @@ func perftCommand(args []string) {
 	}
 
 	fen := args[1]
-	b := chess.BoardFromFEN(fen)
+	b, err := chess.BoardFromFEN(fen)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 	if len(args) == 3 {
 		moves := args[2]
