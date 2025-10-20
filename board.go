@@ -2,6 +2,7 @@ package chess
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -148,7 +149,10 @@ func BoardFromFEN(fen string) (Board, error) {
 
 	enPassantTarget := parts[3]
 	if enPassantTarget != "-" {
-		i := IndexFromAlgebraic(enPassantTarget)
+		i, err := IndexFromAlgebraic(enPassantTarget)
+		if err != nil {
+			return Board{}, ErrInvalidFEN
+		}
 		b.CanEnPassant = true
 		b.EnPassantFile = i % 8
 	}
@@ -217,6 +221,13 @@ func BoardFromRanks(rs [8]string, turn Turn, castleRights CastleRights) Board {
 	}
 
 	return b
+}
+
+func (b *Board) Copy() Board {
+	c := *b
+	c.Moves = slices.Clone(b.Moves)
+	c.noisyMoves = slices.Clone(b.noisyMoves)
+	return c
 }
 
 func (b *Board) QuietMoveCounter() int {
@@ -309,41 +320,52 @@ func (b *Board) String() string {
 
 	var m uint64 = uint64(1) << 63
 	for i := range 64 {
-		switch {
-		case b.whitePawns&m != 0:
-			s.WriteByte('P')
-		case b.whiteRooks&m != 0:
-			s.WriteByte('R')
-		case b.whiteKnights&m != 0:
-			s.WriteByte('N')
-		case b.whiteBishops&m != 0:
-			s.WriteByte('B')
-		case b.whiteQueens&m != 0:
-			s.WriteByte('Q')
-		case b.whiteKings&m != 0:
-			s.WriteByte('K')
-		case b.blackPawns&m != 0:
-			s.WriteByte('p')
-		case b.blackRooks&m != 0:
-			s.WriteByte('r')
-		case b.blackKnights&m != 0:
-			s.WriteByte('n')
-		case b.blackBishops&m != 0:
-			s.WriteByte('b')
-		case b.blackQueens&m != 0:
-			s.WriteByte('q')
-		case b.blackKings&m != 0:
-			s.WriteByte('k')
-		default:
-			s.WriteByte(' ')
+		if i%8 == 0 {
+			s.WriteString(strconv.FormatInt(int64(8-i/8), 10))
+			s.WriteString("|")
 		}
 
-		if i%8 == 7 {
+		switch {
+		case b.whitePawns&m != 0:
+			s.WriteRune('♙')
+		case b.whiteRooks&m != 0:
+			s.WriteRune('♖')
+		case b.whiteKnights&m != 0:
+			s.WriteRune('♘')
+		case b.whiteBishops&m != 0:
+			s.WriteRune('♗')
+		case b.whiteQueens&m != 0:
+			s.WriteRune('♕')
+		case b.whiteKings&m != 0:
+			s.WriteRune('♔')
+		case b.blackPawns&m != 0:
+			s.WriteRune('♟')
+		case b.blackRooks&m != 0:
+			s.WriteRune('♜')
+		case b.blackKnights&m != 0:
+			s.WriteRune('♞')
+		case b.blackBishops&m != 0:
+			s.WriteRune('♝')
+		case b.blackQueens&m != 0:
+			s.WriteRune('♛')
+		case b.blackKings&m != 0:
+			s.WriteRune('♚')
+		default:
+			s.WriteByte('.')
+		}
+		s.WriteByte(' ')
+
+		if i%8 == 7 && i < 63 {
 			s.WriteByte('\n')
 		}
 
 		m >>= 1
 	}
+
+	s.WriteByte('\n')
+
+	s.WriteString("  ---------------\n")
+	s.WriteString("  a b c d e f g h")
 
 	return s.String()
 }

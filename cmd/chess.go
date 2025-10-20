@@ -64,27 +64,65 @@ func perftCommand(args []string) {
 
 func playCommand(args []string) {
 	b := chess.NewBoard()
+
 	for {
 		fmt.Println(b.String())
+		fmt.Println("Value:", chess.Evaluate(b))
 
 		ms := b.LegalMoves()
-		fmt.Println(len(ms), "legal moves")
-		for _, m := range ms {
-			fmt.Println(m.String())
+		/*
+			for _, m := range ms {
+				fmt.Println(m.String())
+			}
+		*/
+
+		var move string
+		var from, to int
+		var err error
+
+		legalMove := false
+
+		for !legalMove {
+			fmt.Print("Move: ")
+			fmt.Scanln(&move)
+
+			if len(move) != 4 {
+
+				fmt.Println("Ermmm, that doesn't look like a move to me")
+				continue
+			}
+
+			from, err = chess.IndexFromAlgebraic(move[0:2])
+			if err != nil {
+				fmt.Println("Ermmm, that doesn't look like a move to me")
+				continue
+			}
+			to, err = chess.IndexFromAlgebraic(move[2:4])
+			if err != nil {
+				fmt.Println("Ermmm, that doesn't look like a move to me")
+				continue
+			}
+
+			for _, m := range ms {
+				if int(m.To()) == to && int(m.From()) == from {
+					legalMove = true
+					break
+				}
+			}
+			if legalMove {
+				break
+			} else {
+				fmt.Println("Aha! Caught you cheating!!")
+			}
 		}
-		fmt.Println(b.CanEnPassant, b.EnPassantFile)
-
-		var from int
-		var to int
-
-		fmt.Print("From: ")
-		fmt.Scanln(&from)
-
-		fmt.Print("To: ")
-		fmt.Scanln(&to)
 
 		b.DoCoordinateMove(from, to, chess.NoPromotion)
 
+		fmt.Println(b.String())
+
+		m := chess.Search(b, 4)
+		b.Move(m)
+		fmt.Println("Computer did", m.String())
 	}
 
 }

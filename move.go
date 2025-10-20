@@ -1,10 +1,17 @@
 package chess
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
-func IndexFromAlgebraic(a string) int {
+var (
+	ErrInvalidAlgebraicNotation = errors.New("Invalid algebraic notation")
+)
+
+func IndexFromAlgebraic(a string) (int, error) {
 	if len(a) != 2 {
-		panic("Invalid algebraic cell notation")
+		return 0, ErrInvalidAlgebraicNotation
 	}
 	var i int
 	switch a[0] {
@@ -25,7 +32,7 @@ func IndexFromAlgebraic(a string) int {
 	case 'h', 'H':
 		i = 0
 	default:
-		panic("Unknown file")
+		return 0, ErrInvalidAlgebraicNotation
 	}
 	switch a[1] {
 	case '1':
@@ -45,10 +52,10 @@ func IndexFromAlgebraic(a string) int {
 	case '8':
 		i += 56
 	default:
-		panic("Unknown rank")
+		return 0, ErrInvalidAlgebraicNotation
 	}
 
-	return i
+	return i, nil
 }
 
 // --- Move Representation ---
