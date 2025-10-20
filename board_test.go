@@ -35,7 +35,7 @@ func TestFromRankString(t *testing.T) {
 		"RNBQKBNR",
 	}
 
-	b := chess.BoardFromRanks(expected, chess.WhiteTurn)
+	b := chess.BoardFromRanks(expected, chess.WhiteTurn, chess.AllCastleRights)
 
 	assert.Equal(t, expected, b.RankStrings())
 }

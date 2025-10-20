@@ -228,15 +228,29 @@ func (b *Board) LegalMoves() []Move {
 		bb &= bb - 1
 	}
 
+	var enPassantPawnIndex int
+	var enPassantRank int
+	if b.Turn == WhiteTurn {
+		enPassantRank = 4
+	} else {
+		enPassantRank = 3
+	}
+	if b.CanEnPassant {
+		enPassantPawnIndex = Index(enPassantRank, b.EnPassantFile)
+	} else {
+		enPassantPawnIndex = 64
+	}
+	enPassantPawn := uint64(1) << enPassantPawnIndex
+
+	enPassantPawnIsOnlyPieceAttackingKing := false //Wow thats a long name
+
 	// pieces under enemy attack
 	var (
-		enemyAttackedSquares   uint64
-		uncheckingCaptures     uint64 = 0 // captures which are allowed
-		firstUncheckingCapture bool   = true
+		enemyAttackedSquares uint64
 	)
 	{
 		// Pawns
-		bb = enemyPawns
+		bb = enemyPawns & ^enPassantPawn
 		for bb != 0 {
 			i := bits.TrailingZeros64(bb)
 
@@ -254,12 +268,7 @@ func (b *Board) LegalMoves() []Move {
 			enemyAttackedSquares |= captures
 
 			if kings&captures != 0 {
-				if firstUncheckingCapture {
-					uncheckingCaptures = board
-					firstUncheckingCapture = false
-				} else {
-					uncheckingCaptures = 0
-				}
+				permittedMoves &= board
 			}
 
 			bb &= bb - 1
@@ -270,16 +279,8 @@ func (b *Board) LegalMoves() []Move {
 		for bb != 0 {
 			i := bits.TrailingZeros64(bb)
 			board := uint64(1) << i
-			moves := orthogonalRays(i, own, enemies)
+			moves := orthogonalRays(i, (own|enemies)&^(board|kings), 0) //handle properly, current the ray passes through the king
 			enemyAttackedSquares |= moves
-			if kings&moves != 0 {
-				if firstUncheckingCapture {
-					uncheckingCaptures = board
-					firstUncheckingCapture = false
-				} else {
-					uncheckingCaptures = 0
-				}
-			}
 			bb &= bb - 1
 		}
 
@@ -288,16 +289,8 @@ func (b *Board) LegalMoves() []Move {
 		for bb != 0 {
 			i := bits.TrailingZeros64(bb)
 			board := uint64(1) << i
-			moves := diagonalRays(i, own, enemies)
+			moves := diagonalRays(i, (own|enemies)&^(board|kings), 0)
 			enemyAttackedSquares |= moves
-			if kings&moves != 0 {
-				if firstUncheckingCapture {
-					uncheckingCaptures = board
-					firstUncheckingCapture = false
-				} else {
-					uncheckingCaptures = 0
-				}
-			}
 			bb &= bb - 1
 		}
 
@@ -306,16 +299,8 @@ func (b *Board) LegalMoves() []Move {
 		for bb != 0 {
 			i := bits.TrailingZeros64(bb)
 			board := uint64(1) << i
-			moves := orthogonalRays(i, own, enemies) | diagonalRays(i, own, enemies)
+			moves := orthogonalRays(i, (own|enemies)&^(board|kings), 0) | diagonalRays(i, (own|enemies)&^(board|kings), 0)
 			enemyAttackedSquares |= moves
-			if kings&moves != 0 {
-				if firstUncheckingCapture {
-					uncheckingCaptures = board
-					firstUncheckingCapture = false
-				} else {
-					uncheckingCaptures = 0
-				}
-			}
 			bb &= bb - 1
 		}
 
@@ -338,12 +323,7 @@ func (b *Board) LegalMoves() []Move {
 			enemyAttackedSquares |= moves
 
 			if kings&moves != 0 {
-				if firstUncheckingCapture {
-					uncheckingCaptures = board
-					firstUncheckingCapture = false
-				} else {
-					uncheckingCaptures = 0
-				}
+				permittedMoves &= board
 			}
 
 			bb &= bb - 1
@@ -365,25 +345,42 @@ func (b *Board) LegalMoves() []Move {
 		moves |= (^(rank0 | file7) & board) >> 7
 
 		enemyAttackedSquares |= moves
-	}
 
-	var checkBlockingMoves = uint64(0)
+		// handle en passant capturable pawn seperately to check if the enPassantPawn is the only one attacking the king
+		bb = enPassantPawn
+		if bb != 0 {
+			// Captures
+			var captures uint64
+			if b.Turn == BlackTurn {
+				captures |= (enPassantPawn & ^file7) << 9 // capture left
+				captures |= (enPassantPawn & ^file0) << 7 // capture right
+			} else {
+				captures |= (enPassantPawn & ^file7) >> 7 // capture left
+				captures |= (enPassantPawn & ^file0) >> 9 // capture right
+			}
+
+			if (kings&captures != 0) && (enemyAttackedSquares&kings == 0) {
+				enPassantPawnIsOnlyPieceAttackingKing = true //Wow thats a long name
+			}
+
+			enemyAttackedSquares |= captures
+
+			if kings&captures != 0 {
+				permittedMoves &= enPassantPawn
+			}
+		}
+	}
 
 	// Blockable check detection
 	bb = kings
 	for bb != 0 {
 		i := bits.TrailingZeros64(bb)
-		first := true
 
 		checkForSlidingCheck := func(rayFunc func(int, uint64, uint64) uint64, slidingEnemies uint64) {
-			ray := rayFunc(i, slidingEnemies, own&^kings)
-			attacker := ray & enemies
+			ray := rayFunc(i, slidingEnemies, occupied&^(kings|slidingEnemies))
+			attacker := ray & slidingEnemies
 			if attacker != 0 {
-				if first {
-					checkBlockingMoves = ray
-				} else {
-					checkBlockingMoves = 0
-				}
+				permittedMoves &= ray
 			}
 
 		}
@@ -400,8 +397,53 @@ func (b *Board) LegalMoves() []Move {
 		bb &= bb - 1
 	}
 
-	if kings&enemyAttackedSquares != 0 {
-		permittedMoves = uncheckingCaptures | checkBlockingMoves
+	//fmt.Println("attacked: ", strconv.FormatInt(int64(enemyAttackedSquares), 2))
+	//fmt.Println("pins: ", pins)
+	//fmt.Println("permitted:", permittedMoves, strconv.FormatInt(int64(permittedMoves), 2))
+
+	// Check if en passant will put king in check
+	enPassantPutsKingInCheck := false
+	if b.CanEnPassant {
+		caputuringPawn1 := (uint64(1) << Index(enPassantRank, b.EnPassantFile-1)) & pawns
+		capturingPawn2 := (uint64(1) << Index(enPassantRank, b.EnPassantFile+1)) & pawns
+
+		// if two pawns can do enPassant. then an east/west ray will always be blocked
+		var capturingPawn uint64
+		if caputuringPawn1 != 0 && capturingPawn2 != 0 {
+			capturingPawn = caputuringPawn1
+		} else {
+			capturingPawn = caputuringPawn1 | capturingPawn2
+		}
+
+		capturedPiece := uint64(1) << uint64(enPassantPawnIndex)
+		kingIndex := bits.TrailingZeros64(kings)
+		fileDiff := enPassantPawnIndex%8 - kingIndex%8
+		rankDiff := enPassantPawnIndex/8 - kingIndex/8
+
+		var ray uint64 = 0
+		switch {
+		case fileDiff == 0 && rankDiff > 0: // north
+			ray = northRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		case fileDiff == 0 && rankDiff < 0: // south
+			ray = southRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == 0 && fileDiff < 0: // east
+			ray = eastRay(kingIndex, occupied&^(kings|capturingPawn|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == 0 && fileDiff > 0: // west
+			ray = westRay(kingIndex, occupied&^(kings|capturingPawn|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == fileDiff && rankDiff > 0: // north-west
+			ray = northWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == -fileDiff && rankDiff > 0: // north-east
+			ray = northEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == fileDiff && rankDiff < 0: // south-east
+			ray = southEastRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		case rankDiff == -fileDiff && rankDiff < 0: // south-west
+			ray = southWestRay(kingIndex, occupied&^(kings|capturedPiece), 0) & orthogonalSlidingEnemies
+		default:
+
+		}
+		if ray != 0 {
+			enPassantPutsKingInCheck = true
+		}
 	}
 
 	// Pawns
@@ -440,21 +482,25 @@ func (b *Board) LegalMoves() []Move {
 			addPawnMove(captures, i, c, false, NoCastle)
 		})
 
-		if b.Turn == WhiteTurn {
-			// En passant
-			to := Index(5, b.EnPassantFile)
-			pinned := pins[i]&(uint64(1)<<to) != 0
-			if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
-				ms = append(ms, NewMove(i, Index(5, b.EnPassantFile), PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
-			}
-		} else {
-			// En passant
-			to := Index(2, b.EnPassantFile)
-			pinned := pins[i]&(uint64(1)<<to) != 0
-			if b.CanEnPassant && rank == 3 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned {
-				ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
-			}
+		if !enPassantPutsKingInCheck {
+			if b.Turn == WhiteTurn {
+				// En passant
+				to := Index(5, b.EnPassantFile)
+				permittedMove := permittedMoves&(uint64(1)<<to) != 0 || enPassantPawnIsOnlyPieceAttackingKing
+				pinned := pins[i]&(uint64(1)<<to) != 0
+				if b.CanEnPassant && rank == 4 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned && permittedMove {
+					ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
+				}
+			} else {
+				// En passant
+				to := Index(2, b.EnPassantFile)
+				permittedMove := permittedMoves&(uint64(1)<<to) != 0 || enPassantPawnIsOnlyPieceAttackingKing
+				pinned := pins[i]&(uint64(1)<<to) != 0
+				if b.CanEnPassant && rank == 3 && ((b.EnPassantFile == file-1) || (b.EnPassantFile == file+1)) && !pinned && permittedMove {
+					ms = append(ms, NewMove(i, to, PawnType, NoPromotion, NoCapture, true, b.CastleRights, NoCastle))
+				}
 
+			}
 		}
 
 		bb &= bb - 1
@@ -542,20 +588,24 @@ func (b *Board) LegalMoves() []Move {
 
 	addKingMovesAndCaptures(moves, i)
 
+	//fmt.Println(b.CastleRights.CanWhiteKing())
+	//fmt.Println(b.CastleRights.CanWhiteQueen())
+	//fmt.Println(b.CastleRights.CanBlackKing())
+	//fmt.Println(b.CastleRights.CanBlackQueen())
 	// Castling
 	if enemyAttackedSquares&kings == 0 {
 		if b.Turn == WhiteTurn {
-			if b.CastleRights.CanWhiteKing() && ((occupied|enemyAttackedSquares)&0b00000110 == 0) {
+			if b.CastleRights.CanWhiteKing() && ((occupied|enemyAttackedSquares)&0b00000110 == 0) && (i == 3) {
 				ms = append(ms, NewMove(i, 1, KingType, NoPromotion, NoCapture, false, b.CastleRights, KingCastle))
 			}
-			if b.CastleRights.CanWhiteQueen() && ((occupied|enemyAttackedSquares)&0b01110000 == 0) {
+			if b.CastleRights.CanWhiteQueen() && (occupied&0b01110000 == 0) && (enemyAttackedSquares&0b00110000 == 0) && (i == 3) {
 				ms = append(ms, NewMove(i, 5, KingType, NoPromotion, NoCapture, false, b.CastleRights, QueenCastle))
 			}
 		} else {
-			if b.CastleRights.CanBlackKing() && ((occupied|enemyAttackedSquares)&(0b00000110<<56) == 0) {
+			if b.CastleRights.CanBlackKing() && ((occupied|enemyAttackedSquares)&(0b00000110<<56) == 0) && (i == 59) {
 				ms = append(ms, NewMove(i, 57, KingType, NoPromotion, NoCapture, false, b.CastleRights, KingCastle))
 			}
-			if b.CastleRights.CanBlackQueen() && ((occupied|enemyAttackedSquares)&(0b01110000<<56) == 0) {
+			if b.CastleRights.CanBlackQueen() && (occupied&(0b01110000<<56) == 0) && (enemyAttackedSquares&(0b00110000<<56) == 0) && (i == 59) {
 				ms = append(ms, NewMove(i, 61, KingType, NoPromotion, NoCapture, false, b.CastleRights, QueenCastle))
 			}
 		}

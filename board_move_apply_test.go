@@ -802,7 +802,7 @@ func TestMoveUnmove(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := chess.BoardFromRanks(tt.board, tt.turn)
+			b := chess.BoardFromRanks(tt.board, tt.turn, chess.AllCastleRights)
 			t.Run("Move", func(t *testing.T) {
 				b.Move(tt.move)
 				assert.Equal(t, tt.expected, b.RankStrings())

@@ -55,19 +55,21 @@ func NewBoard() Board {
 		blackQueens:  0b0001000000000000000000000000000000000000000000000000000000000000,
 		blackKings:   0b0000100000000000000000000000000000000000000000000000000000000000,
 
-		Turn:       WhiteTurn,
-		HalfMoves:  0,
-		Moves:      []Move{},
-		noisyMoves: []int{},
+		Turn:         WhiteTurn,
+		HalfMoves:    0,
+		Moves:        []Move{},
+		noisyMoves:   []int{},
+		CastleRights: AllCastleRights,
 	}
 }
 
-func BoardFromRanks(rs [8]string, turn Turn) Board {
+func BoardFromRanks(rs [8]string, turn Turn, castleRights CastleRights) Board {
 	b := Board{
-		Turn:       turn,
-		HalfMoves:  0,
-		Moves:      []Move{},
-		noisyMoves: []int{},
+		Turn:         turn,
+		HalfMoves:    0,
+		Moves:        []Move{},
+		noisyMoves:   []int{},
+		CastleRights: castleRights,
 	}
 
 	for i, r := range rs {

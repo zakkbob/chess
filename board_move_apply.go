@@ -1,5 +1,28 @@
 package chess
 
+// WARN: must follow format <from square><to square>[<promoted to>]
+func (b *Board) DoAlgebraicMove(s string) {
+	if len(s) != 4 && len(s) != 5 {
+		panic("Invalid algebraic move")
+	}
+
+	from := IndexFromAlgebraic(s[0:2])
+	to := IndexFromAlgebraic(s[2:4])
+	promotion := NoPromotion
+	if len(s) == 5 {
+		promotion = PromotionFromSymbol(rune(s[4]))
+	}
+
+	b.DoCoordinateMove(from, to, promotion)
+
+	//fmt.Println(s)
+	//fmt.Println(b.CastleRights.CanWhiteKing())
+	//fmt.Println(b.CastleRights.CanWhiteQueen())
+	//fmt.Println(b.CastleRights.CanBlackKing())
+	//fmt.Println(b.CastleRights.CanBlackQueen())
+	//fmt.Println()
+}
+
 // Applies given move
 // Assumes it is valid and legal
 func (b *Board) DoCoordinateMove(from, to int, promotion Promotion) {
@@ -93,9 +116,9 @@ func (b *Board) Move(m Move) {
 			b.blackPawns ^= toMask
 		case RookCapture:
 			if m.To() == 56 {
-				b.CastleRights.LoseWhiteKing()
+				b.CastleRights.LoseBlackKing()
 			} else if m.To() == 63 {
-				b.CastleRights.LoseWhiteQueen()
+				b.CastleRights.LoseBlackQueen()
 			}
 			b.blackRooks ^= toMask
 		case KnightCapture:
@@ -141,9 +164,9 @@ func (b *Board) Move(m Move) {
 			b.blackPawns ^= moveMask
 		case RookType:
 			if m.From() == 56 {
-				b.CastleRights.LoseWhiteKing()
+				b.CastleRights.LoseBlackKing()
 			} else if m.From() == 63 {
-				b.CastleRights.LoseWhiteQueen()
+				b.CastleRights.LoseBlackQueen()
 			}
 			b.blackRooks ^= moveMask
 		case KnightType:

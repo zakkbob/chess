@@ -1,8 +1,55 @@
 package chess
 
-import (
-	"strconv"
-)
+import "strings"
+
+func IndexFromAlgebraic(a string) int {
+	if len(a) != 2 {
+		panic("Invalid algebraic cell notation")
+	}
+	var i int
+	switch a[0] {
+	case 'a', 'A':
+		i = 7
+	case 'b', 'B':
+		i = 6
+	case 'c', 'C':
+		i = 5
+	case 'd', 'D':
+		i = 4
+	case 'e', 'E':
+		i = 3
+	case 'f', 'F':
+		i = 2
+	case 'g', 'G':
+		i = 1
+	case 'h', 'H':
+		i = 0
+	default:
+		panic("Unknown file")
+	}
+	switch a[1] {
+	case '1':
+		i += 0
+	case '2':
+		i += 8
+	case '3':
+		i += 16
+	case '4':
+		i += 24
+	case '5':
+		i += 32
+	case '6':
+		i += 40
+	case '7':
+		i += 48
+	case '8':
+		i += 56
+	default:
+		panic("Unknown rank")
+	}
+
+	return i
+}
 
 // --- Move Representation ---
 // Bits Overview (inclusive)
@@ -51,21 +98,21 @@ import (
 type Move uint32
 
 func (m Move) String() string {
-	s := m.PieceType().String() + " from " + strconv.Itoa(int(m.From())) + " to " + strconv.Itoa(int(m.To()))
+	var b strings.Builder
 
-	if m.Capture() != NoCapture {
-		s += ", captures " + m.Capture().String()
-	}
+	files := []rune{'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'}
+	ranks := []rune{'1', '2', '3', '4', '5', '6', '7', '8'}
+
+	b.WriteRune(files[m.FromFile()])
+	b.WriteRune(ranks[m.FromRank()])
+	b.WriteRune(files[m.ToFile()])
+	b.WriteRune(ranks[m.ToRank()])
 
 	if m.Promotion() != NoPromotion {
-		s += ", promotes " + m.Promotion().String()
+		b.WriteRune(m.Promotion().Symbol())
 	}
 
-	if m.EnPassant() {
-		s += ", en passants"
-	}
-
-	return s
+	return b.String()
 }
 
 func (m Move) IsNoisy() bool {
@@ -270,6 +317,23 @@ const (
 	QueenPromotion  Promotion = 0b00000000000000011100000000000000
 )
 
+func PromotionFromSymbol(r rune) Promotion {
+	switch r {
+	case ' ':
+		return NoPromotion
+	case 'r', 'R':
+		return RookPromotion
+	case 'n', 'N':
+		return KnightPromotion
+	case 'b', 'B':
+		return BishopPromotion
+	case 'q', 'Q':
+		return QueenPromotion
+	default:
+		panic("invalid promotion symbol")
+	}
+}
+
 func (p Promotion) String() string {
 	switch p {
 	case NoPromotion:
@@ -282,6 +346,23 @@ func (p Promotion) String() string {
 		return "bishop"
 	case QueenPromotion:
 		return "queen"
+	default:
+		panic("invalid promotion")
+	}
+}
+
+func (p Promotion) Symbol() rune {
+	switch p {
+	case NoPromotion:
+		return ' '
+	case RookPromotion:
+		return 'r'
+	case KnightPromotion:
+		return 'n'
+	case BishopPromotion:
+		return 'b'
+	case QueenPromotion:
+		return 'q'
 	default:
 		panic("invalid promotion")
 	}
@@ -323,6 +404,7 @@ type CastleRights uint32
 const (
 	// CastleRights                 0b00000000000000000000001111000000
 	NoCastleRights   CastleRights = 0b00000000000000000000000000000000
+	AllCastleRights  CastleRights = 0b00000000000000000000001111000000
 	WhiteKingCastle  CastleRights = 0b00000000000000000000001000000000
 	WhiteQueenCastle CastleRights = 0b00000000000000000000000100000000
 	BlackKingCastle  CastleRights = 0b00000000000000000000000010000000
