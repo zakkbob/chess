@@ -2,21 +2,9 @@ package chess
 
 // WARN: must follow format <from square><to square>[<promoted to>]
 func (b *Board) DoAlgebraicMove(s string) error {
-	if len(s) != 4 && len(s) != 5 {
-		panic("Invalid algebraic move")
-	}
-
-	from, err := IndexFromAlgebraic(s[0:2])
+	from, to, promotion, err := ParseAlgebraicMove(s)
 	if err != nil {
 		return err
-	}
-	to, err := IndexFromAlgebraic(s[2:4])
-	if err != nil {
-		return err
-	}
-	promotion := NoPromotion
-	if len(s) == 5 {
-		promotion = PromotionFromSymbol(rune(s[4]))
 	}
 
 	b.DoCoordinateMove(from, to, promotion)

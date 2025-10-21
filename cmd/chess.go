@@ -62,69 +62,87 @@ func perftCommand(args []string) {
 	fmt.Println(counter)
 }
 
+func isMoveLegal(from, to int, p chess.Promotion, ms []chess.Move) bool {
+	for _, m := range ms {
+		if int(m.To()) == to && int(m.From()) == from && m.Promotion() == p {
+			return true
+		}
+	}
+	return false
+}
+
+func displayLegalMoves(ms []chess.Move) {
+	fmt.Print("Legal moves: ")
+	for _, m := range ms {
+		fmt.Print(m.String() + " ")
+	}
+	fmt.Println("(" + fmt.Sprint(len(ms)) + ")")
+}
+
+func doHumanMove(b *chess.Board, ms []chess.Move) {
+	var (
+		move     string
+		from, to int
+		p        chess.Promotion
+		err      error
+	)
+
+	legalMove := false
+
+	for !legalMove {
+		fmt.Print("Move: ")
+		fmt.Scanln(&move)
+
+		from, to, p, err = chess.ParseAlgebraicMove(move)
+		if err != nil {
+			fmt.Println("Errrm, that doesn't look like a valid move to me")
+			continue
+		}
+
+		legalMove = isMoveLegal(from, to, p, ms)
+
+		if !legalMove {
+			fmt.Println("Aha! Caught you cheating!!")
+		}
+	}
+
+	b.DoCoordinateMove(from, to, p)
+}
+
 func playCommand(args []string) {
 	b := chess.NewBoard()
+
+	var (
+		whiteIsEngine bool
+		blackIsEngine bool
+	)
+
+	fmt.Print("White is engine? ")
+	fmt.Scanln(&whiteIsEngine)
+	fmt.Print("Black is engine? ")
+	fmt.Scanln(&blackIsEngine)
 
 	for {
 		fmt.Println(b.String())
 		fmt.Println("Value:", chess.Evaluate(b))
 
 		ms := b.LegalMoves()
-		/*
-			for _, m := range ms {
-				fmt.Println(m.String())
-			}
-		*/
+		displayLegalMoves(ms)
 
-		var move string
-		var from, to int
-		var err error
-
-		legalMove := false
-
-		for !legalMove {
-			fmt.Print("Move: ")
-			fmt.Scanln(&move)
-
-			if len(move) != 4 {
-
-				fmt.Println("Ermmm, that doesn't look like a move to me")
-				continue
-			}
-
-			from, err = chess.IndexFromAlgebraic(move[0:2])
-			if err != nil {
-				fmt.Println("Ermmm, that doesn't look like a move to me")
-				continue
-			}
-			to, err = chess.IndexFromAlgebraic(move[2:4])
-			if err != nil {
-				fmt.Println("Ermmm, that doesn't look like a move to me")
-				continue
-			}
-
-			for _, m := range ms {
-				if int(m.To()) == to && int(m.From()) == from {
-					legalMove = true
-					break
-				}
-			}
-			if legalMove {
-				break
-			} else {
-				fmt.Println("Aha! Caught you cheating!!")
-			}
+		if (b.Turn == chess.WhiteTurn && whiteIsEngine) || (b.Turn == chess.BlackTurn && blackIsEngine) {
+			m := chess.Search(b, 4)
+			b.Move(m)
+			fmt.Println("Engine did", m.String())
+		} else {
+			doHumanMove(&b, ms)
 		}
 
-		b.DoCoordinateMove(from, to, chess.NoPromotion)
+		if len(ms) == 0 {
+			fmt.Println("Game is over, I wonder who won")
+		}
 
-		fmt.Println(b.String())
-
-		m := chess.Search(b, 4)
-		b.Move(m)
-		fmt.Println("Computer did", m.String())
+		fmt.Println()
 	}
-
 }
 
 func main() {

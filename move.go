@@ -9,6 +9,29 @@ var (
 	ErrInvalidAlgebraicNotation = errors.New("Invalid algebraic notation")
 )
 
+func ParseAlgebraicMove(s string) (from int, to int, p Promotion, err error) {
+	if len(s) != 4 && len(s) != 5 {
+		panic("Invalid algebraic move")
+	}
+
+	from, err = IndexFromAlgebraic(s[0:2])
+	if err != nil {
+		return 0, 0, NoPromotion, err
+	}
+
+	to, err = IndexFromAlgebraic(s[2:4])
+	if err != nil {
+		return 0, 0, NoPromotion, err
+	}
+
+	p = NoPromotion
+	if len(s) == 5 {
+		p = PromotionFromSymbol(rune(s[4]))
+	}
+
+	return from, to, p, nil
+}
+
 func IndexFromAlgebraic(a string) (int, error) {
 	if len(a) != 2 {
 		return 0, ErrInvalidAlgebraicNotation

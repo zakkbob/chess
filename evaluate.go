@@ -2,6 +2,27 @@ package chess
 
 import "math/bits"
 
+func sumValues(bb uint64, values [64]int) int {
+	val := 0
+	for bb != 0 {
+		i := bits.TrailingZeros64(bb)
+		val += values[i]
+		bb &= bb - 1
+	}
+	return val
+}
+
+var knightVals = [64]int{
+	-50, -40, -30, -30, -30, -30, -40, -50,
+	-40, -20, 0, 5, 5, 0, -20, -40,
+	-30, 0, 10, 15, 15, 10, 0, -30,
+	-30, 5, 15, 20, 20, 15, 5, -30,
+	-30, 5, 15, 20, 20, 15, 5, -30,
+	-30, 0, 10, 15, 15, 10, 0, -30,
+	-40, -20, 0, 5, 5, 0, -20, -40,
+	-50, -40, -30, -30, -30, -30, -40, -50,
+}
+
 func Evaluate(b Board) int {
 	var multiplier int
 	if b.Turn == WhiteTurn {
@@ -39,7 +60,9 @@ func Evaluate(b Board) int {
 		queenWt*(wQ-bQ) +
 		kingWt*(wK-bK)
 
-	score := materialScore
+	positionalScore := sumValues(b.whiteKnights, knightVals) - sumValues(b.blackKnights, knightVals)
+
+	score := materialScore + positionalScore
 
 	return score * multiplier
 }
