@@ -1,5 +1,7 @@
 package chess
 
+var inf = 9223372036854775807
+
 func Search(b Board, depth int) Move {
 	ms := b.LegalMoves()
 
@@ -8,11 +10,11 @@ func Search(b Board, depth int) Move {
 	}
 
 	bestMove := ms[0]
-	bestValue := -9223372036854775808
+	bestValue := -inf
 
 	for _, m := range ms {
 		b.Move(m)
-		val := -negamax(b, depth-1)
+		val := -negamax(b, depth-1, -inf, inf)
 		if val > bestValue {
 			bestValue = val
 			bestMove = m
@@ -23,9 +25,9 @@ func Search(b Board, depth int) Move {
 	return bestMove
 }
 
-func negamax(b Board, depth int) int {
+func negamax(b Board, depth int, alpha, beta int) int {
 	ms := b.LegalMoves()
-	value := -9223372036854775808
+	value := -inf
 	if len(ms) == 0 {
 		return value
 	}
@@ -34,8 +36,12 @@ func negamax(b Board, depth int) int {
 	}
 	for _, m := range ms {
 		b.Move(m)
-		value = max(value, -negamax(b, depth-1))
+		value = max(value, -negamax(b, depth-1, -beta, -alpha))
 		b.Unmove()
+		alpha = max(alpha, value)
+		if alpha >= beta {
+			break
+		}
 	}
 	return value
 }
