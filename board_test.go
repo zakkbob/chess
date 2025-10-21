@@ -17,7 +17,7 @@ func BenchmarkMove(b *testing.B) {
 
 func TestString(t *testing.T) {
 	b := chess.NewBoard()
-	expected := "rnbqkbnr\npppppppp\n        \n        \n        \n        \nPPPPPPPP\nRNBQKBNR\n"
+	expected := "8|♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ \n7|♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ \n6|. . . . . . . . \n5|. . . . . . . . \n4|. . . . . . . . \n3|. . . . . . . . \n2|♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ \n1|♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ \n  ---------------\n  a b c d e f g h"
 	got := b.String()
 
 	assert.Equal(t, expected, got)
