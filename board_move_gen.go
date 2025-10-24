@@ -4,7 +4,17 @@ import (
 	"math/bits"
 )
 
-func (b *Board) LegalMoves() []Move {
+type GameStatus int
+
+const (
+	InProgress = iota
+	Draw
+	Stalemate
+	Checkmate
+)
+
+// also checks for draw/stalemate/checkmate
+func (b *Board) LegalMoves() ([]Move, GameStatus) {
 	ms := make([]Move, 0, 128)
 
 	var (
@@ -604,5 +614,18 @@ func (b *Board) LegalMoves() []Move {
 
 	}
 
-	return ms
+	// Game status
+	if len(ms) == 0 {
+		if enemyAttackedSquares&kings != 0 {
+			return ms, Checkmate
+		} else {
+			return ms, Stalemate
+		}
+	}
+
+	if b.QuietMoveCounter() == 50 {
+		return ms, Draw
+	}
+
+	return ms, InProgress
 }

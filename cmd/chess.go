@@ -16,7 +16,7 @@ func perft(b *chess.Board, depth int) int {
 
 	counter := 0
 
-	ms := b.LegalMoves()
+	ms, _ := b.LegalMoves()
 	for _, m := range ms {
 		b.Move(m)
 		nodes := perft(b, depth-1)
@@ -49,7 +49,7 @@ func perftCommand(args []string) {
 	}
 
 	counter := 0
-	ms := b.LegalMoves()
+	ms, _ := b.LegalMoves()
 	for _, m := range ms {
 		b.Move(m)
 		nodes := perft(&b, depth-1)
@@ -126,7 +126,7 @@ func playCommand(args []string) {
 		fmt.Println(b.String())
 		fmt.Println("Value:", chess.Evaluate(b))
 
-		ms := b.LegalMoves()
+		ms, _ := b.LegalMoves()
 		displayLegalMoves(ms)
 
 		if (b.Turn == chess.WhiteTurn && whiteIsEngine) || (b.Turn == chess.BlackTurn && blackIsEngine) {

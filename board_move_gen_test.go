@@ -11,13 +11,13 @@ import (
 )
 
 func perft(b *chess.Board, depth int) int {
+	ms, _ := b.LegalMoves()
+
 	if depth == 1 {
-		return len(b.LegalMoves())
+		return len(ms)
 	}
 
 	counter := 0
-
-	ms := b.LegalMoves()
 	for _, m := range ms {
 		b.Move(m)
 		nodes := perft(b, depth-1)
@@ -28,7 +28,7 @@ func perft(b *chess.Board, depth int) int {
 }
 
 func moveCount(b *chess.Board, depth int) int {
-	ms := b.LegalMoves()
+	ms, _ := b.LegalMoves()
 	counter := len(ms)
 
 	if depth == 1 {
