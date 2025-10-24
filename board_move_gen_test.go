@@ -57,6 +57,13 @@ func BenchmarkPerft(b *testing.B) {
 	b.ReportMetric(float64(elapsed.Nanoseconds())/float64(moves), "ns/move")
 }
 
+func BenchmarkLegalMoves(b *testing.B) {
+	bd := chess.NewBoard()
+	for b.Loop() {
+		bd.LegalMoves()
+	}
+}
+
 func TestPerft(t *testing.T) {
 	tests := []struct {
 		Name   string
