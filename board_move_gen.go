@@ -7,7 +7,7 @@ import (
 type GameStatus int
 
 const (
-	InProgress = iota
+	InProgress GameStatus = iota
 	Draw
 	Stalemate
 	Checkmate
