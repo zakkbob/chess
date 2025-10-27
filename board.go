@@ -2,6 +2,7 @@ package chess
 
 import (
 	"errors"
+	"math/bits"
 	"slices"
 	"strconv"
 	"strings"
@@ -221,6 +222,44 @@ func BoardFromRanks(rs [8]string, turn Turn, castleRights CastleRights) Board {
 	}
 
 	return b
+}
+
+func (b *Board) Zobrist() uint64 {
+	var z uint64
+
+	applyBitboard := func(bb uint64, zobristVals [64]uint64) {
+		for bb != 0 {
+			i := bits.LeadingZeros64(bb)
+			z ^= zobristVals[i]
+			bb &= bb - 1
+		}
+	}
+
+	if b.Turn == BlackTurn {
+		z ^= blackTurnZobrist
+	}
+
+	if b.CanEnPassant {
+		z ^= enPassantZobrist[b.EnPassantFile]
+	}
+
+	z ^= castlingRightsZobrist[b.CastleRights.Uint64()]
+
+	applyBitboard(b.whitePawns, whitePawnZobrist)
+	applyBitboard(b.whiteRooks, whiteRookZobrist)
+	applyBitboard(b.whiteBishops, whiteBishopZobrist)
+	applyBitboard(b.whiteKnights, whiteKnightZobrist)
+	applyBitboard(b.whiteQueens, whiteQueenZobrist)
+	applyBitboard(b.whiteKings, whiteKingZobrist)
+
+	applyBitboard(b.blackPawns, blackPawnZobrist)
+	applyBitboard(b.blackRooks, blackRookZobrist)
+	applyBitboard(b.blackBishops, blackBishopZobrist)
+	applyBitboard(b.blackKnights, blackKnightZobrist)
+	applyBitboard(b.blackQueens, blackQueenZobrist)
+	applyBitboard(b.blackKings, blackKingZobrist)
+
+	return z
 }
 
 func (b *Board) Copy() Board {

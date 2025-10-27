@@ -15,6 +15,13 @@ func BenchmarkMove(b *testing.B) {
 	}
 }
 
+func BenchmarkZobrist(b *testing.B) {
+	bd := chess.NewBoard()
+	for b.Loop() {
+		bd.Zobrist()
+	}
+}
+
 func TestString(t *testing.T) {
 	b := chess.NewBoard()
 	expected := "8|♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ \n7|♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ \n6|. . . . . . . . \n5|. . . . . . . . \n4|. . . . . . . . \n3|. . . . . . . . \n2|♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ \n1|♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ \n  ---------------\n  a b c d e f g h"

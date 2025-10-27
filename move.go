@@ -483,6 +483,10 @@ func CastleRightsFromString(s string) CastleRights {
 	return cr
 }
 
+func (cr CastleRights) Uint64() uint64 {
+	return uint64(cr >> 6)
+}
+
 func (cr CastleRights) CanWhiteKing() bool {
 	return cr&WhiteKingCastle != 0
 }

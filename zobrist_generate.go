@@ -31,7 +31,7 @@ func main() {
 
 	f.WriteString("package chess\n\nfunc init() {\n")
 
-	fmt.Fprintf(f, "\tblackToMoveZobrist = 0x%s\n", strconv.FormatUint(r.Uint64(), 16))
+	fmt.Fprintf(f, "\tblackTurnZobrist = 0x%s\n", strconv.FormatUint(r.Uint64(), 16))
 	generateArray(f, "enPassantZobrist", 8)
 	generateArray(f, "castlingRightsZobrist", 16)
 	fmt.Fprintln(f)

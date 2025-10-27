@@ -3,7 +3,7 @@ package chess
 //go:generate go run zobrist_generate.go
 
 var (
-	blackToMoveZobrist    uint64
+	blackTurnZobrist      uint64
 	castlingRightsZobrist [16]uint64
 	enPassantZobrist      [8]uint64
 
