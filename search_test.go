@@ -1,6 +1,8 @@
 package chess
 
-import "testing"
+import (
+	"testing"
+)
 
 func BenchmarkSearch(b *testing.B) {
 	bd := NewBoard()
