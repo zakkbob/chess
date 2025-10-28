@@ -1,14 +1,11 @@
 package chess
 
 import (
-	"fmt"
 	"sort"
 	"time"
 )
 
 var inf = 9223372036854775807
-
-var nodes = 0
 
 func Search(b Board, seconds int) Move {
 	start := time.Now()
@@ -36,7 +33,6 @@ func Search(b Board, seconds int) Move {
 		}
 	}
 
-	fmt.Println(nodes)
 	return searched[0].Move
 }
 
@@ -63,7 +59,6 @@ func orderMoves(b Board, depth int, searched []MoveSearch) []MoveSearch {
 const checkmateEval = -1000000
 
 func negamax(b Board, depth int, alpha, beta, ply int) int {
-	nodes++
 	ms, status := b.LegalMoves()
 	value := -inf
 
