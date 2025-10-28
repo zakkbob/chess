@@ -3,9 +3,9 @@ package chess
 type entryType int
 
 const (
-	exact entryType = iota
-	lowerBound
-	upperBound
+	ExactEntry entryType = iota
+	LowerBoundEntry
+	UpperBoundEntry
 )
 
 type Transposition struct {
@@ -17,8 +17,28 @@ type Transposition struct {
 }
 
 type TranspositionTable struct {
-	Entries []Transposition
-	Mask uint64
+	entries []Transposition
+	mask    uint64
 }
 
-func NewTranspositionTable
+// Creates a transposition table with 2^exp entries
+func NewTranspositionTable(exp int) *TranspositionTable {
+	length := 1 << exp
+	mask := uint64(length - 1)
+	return &TranspositionTable{
+		entries: make([]Transposition, length),
+		mask:    mask,
+	}
+}
+
+func (tt *TranspositionTable) Get(key uint64) (Transposition, bool) {
+	i := (key & tt.mask)
+	t := tt.entries[i]
+	return t, t.Key == key
+}
+
+// Always overwrites existing entry
+func (tt *TranspositionTable) Save(t Transposition) {
+	i := (t.Key & tt.mask)
+	tt.entries[i] = t
+}
