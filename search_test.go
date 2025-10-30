@@ -18,7 +18,9 @@ func BenchmarkSearch(b *testing.B) {
 	}
 
 	for b.Loop() {
-		searched = orderMoves(bd, 4, searched)
-		b.Log(searched[0].Move.String())
+		b.StopTimer()
+		tt := NewTranspositionTable(20)
+		b.StartTimer()
+		searched = orderMoves(bd, 4, searched, tt)
 	}
 }
