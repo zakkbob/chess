@@ -130,7 +130,7 @@ func playCommand(args []string) {
 		displayLegalMoves(ms)
 
 		if (b.Turn == chess.WhiteTurn && whiteIsEngine) || (b.Turn == chess.BlackTurn && blackIsEngine) {
-			m := chess.Search(b, 4)
+			m := chess.Search(b, 1)
 			b.Move(m)
 			fmt.Println("Engine did", m.String())
 		} else {
