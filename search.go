@@ -8,10 +8,10 @@ import (
 
 var inf = 9223372036854775807
 
-func Search(b Board, seconds int) Move {
+func (e *Engine) Search(seconds int) Move {
 	start := time.Now()
 
-	ms, status := b.LegalMoves()
+	ms, status := e.B.LegalMoves()
 
 	if status != InProgress {
 		panic("aghhh, the game is over")
@@ -27,10 +27,8 @@ func Search(b Board, seconds int) Move {
 		})
 	}
 
-	tt := NewTranspositionTable(20)
-
 	for d := 1; ; d += 1 {
-		searched = orderMoves(b, d, searched, tt)
+		searched = e.orderMoves(d, searched)
 		fmt.Println(d)
 		if time.Since(start).Seconds() > float64(seconds) {
 			break
@@ -46,13 +44,13 @@ type MoveSearch struct {
 	Depth int
 }
 
-func orderMoves(b Board, depth int, searched []MoveSearch, tt *TranspositionTable) []MoveSearch {
+func (e *Engine) orderMoves(depth int, searched []MoveSearch) []MoveSearch {
 	for i, m := range searched {
-		b.Move(m.Move)
-		val := -negamax(b, depth-1, -inf, inf, 1, tt)
+		e.B.Move(m.Move)
+		val := -e.negamax(depth-1, -inf, inf, 1)
 		searched[i].Depth = depth
 		searched[i].Eval = val
-		b.Unmove()
+		e.B.Unmove()
 	}
 
 	sort.Slice(searched, func(i, j int) bool { return searched[i].Eval > searched[j].Eval })
@@ -62,9 +60,9 @@ func orderMoves(b Board, depth int, searched []MoveSearch, tt *TranspositionTabl
 
 const checkmateEval = -1000000
 
-func negamax(b Board, depth int, alpha, beta, ply int, tt *TranspositionTable) int {
-	z := b.Zobrist()
-	if t, ok := tt.Get(z); ok && t.Depth >= depth {
+func (e *Engine) negamax(depth int, alpha, beta, ply int) int {
+	z := e.B.Zobrist()
+	if t, ok := e.TT.Get(z); ok && t.Depth >= depth {
 		if t.Type == ExactEntry ||
 			(t.Type == LowerBoundEntry && t.Score >= beta) ||
 			(t.Type == UpperBoundEntry && t.Score < alpha) {
@@ -75,7 +73,7 @@ func negamax(b Board, depth int, alpha, beta, ply int, tt *TranspositionTable) i
 	originalA := alpha
 	originalB := beta
 
-	ms, status := b.LegalMoves()
+	ms, status := e.B.LegalMoves()
 	value := -inf
 
 	switch status {
@@ -89,13 +87,13 @@ func negamax(b Board, depth int, alpha, beta, ply int, tt *TranspositionTable) i
 		return value
 	}
 	if depth == 0 {
-		return Evaluate(b)
+		return e.Evaluate()
 	}
 
 	for _, m := range ms {
-		b.Move(m)
-		value = max(value, -negamax(b, depth-1, -beta, -alpha, ply+1, tt))
-		b.Unmove()
+		e.B.Move(m)
+		value = max(value, -e.negamax(depth-1, -beta, -alpha, ply+1))
+		e.B.Unmove()
 		alpha = max(alpha, value)
 		if alpha >= beta {
 			break
@@ -115,7 +113,7 @@ func negamax(b Board, depth int, alpha, beta, ply int, tt *TranspositionTable) i
 		t.Type = LowerBoundEntry
 	}
 
-	tt.Save(t)
+	e.TT.Save(t)
 
 	return value
 }

@@ -110,12 +110,16 @@ func doHumanMove(b *chess.Board, ms []chess.Move) {
 }
 
 func playCommand(args []string) {
-	b := chess.NewBoard()
-
 	var (
 		whiteIsEngine bool
 		blackIsEngine bool
 	)
+
+	e := chess.Engine{
+		B:  chess.NewBoard(),
+		TT: *chess.NewTranspositionTable(10),
+		EP: chess.DefaultParams,
+	}
 
 	fmt.Print("White is engine? ")
 	fmt.Scanln(&whiteIsEngine)
@@ -123,18 +127,18 @@ func playCommand(args []string) {
 	fmt.Scanln(&blackIsEngine)
 
 	for {
-		fmt.Println(b.String())
-		fmt.Println("Value:", chess.Evaluate(b))
+		fmt.Println(e.B.String())
+		fmt.Println("Value:", e.Evaluate())
 
-		ms, _ := b.LegalMoves()
+		ms, _ := e.B.LegalMoves()
 		displayLegalMoves(ms)
 
-		if (b.Turn == chess.WhiteTurn && whiteIsEngine) || (b.Turn == chess.BlackTurn && blackIsEngine) {
-			m := chess.Search(b, 1)
-			b.Move(m)
+		if (e.B.Turn == chess.WhiteTurn && whiteIsEngine) || (e.B.Turn == chess.BlackTurn && blackIsEngine) {
+			m := e.Search(1)
+			e.B.Move(m)
 			fmt.Println("Engine did", m.String())
 		} else {
-			doHumanMove(&b, ms)
+			doHumanMove(&e.B, ms)
 		}
 
 		if len(ms) == 0 {

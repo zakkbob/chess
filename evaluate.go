@@ -22,75 +22,9 @@ func sumBlackValues(bb uint64, values [64]int) int {
 	return val
 }
 
-var pawnVals = [64]int{
-	00, 00, 00, 00, 00, 00, 00, 00,
-	10, 20, 20, 30, 30, 20, 20, 10,
-	0, 10, 10, 20, 20, 10, 10, 00,
-	-10, 00, 00, 10, 10, 00, 00, -10,
-	-20, -10, -10, 00, 00, -10, -10, -20,
-	-30, -20, -20, -20, -20, -20, -20, -30,
-	-40, -30, -30, -30, -30, -30, -30, -40,
-	00, 00, 00, 00, 00, 00, 00, 00,
-}
-
-var rookVals = [64]int{
-	-20, -20, -10, 00, 00, -10, -20, -20,
-	-20, -10, 00, 10, 10, 00, -10, -20,
-	-10, 00, 10, 20, 20, 10, 00, -10,
-	00, 10, 20, 30, 30, 20, 10, 00,
-	00, 10, 20, 30, 30, 20, 10, 00,
-	-10, 00, 10, 20, 20, 10, 00, -10,
-	-20, -10, 00, 10, 10, 00, -10, -20,
-	-20, -20, -10, 00, 00, -10, -20, -20,
-}
-
-var queenVals = [64]int{
-	-20, -20, -10, 00, 00, -10, -20, -20,
-	-20, -10, 00, 10, 10, 00, -10, -20,
-	-10, 00, 10, 20, 20, 10, 00, -10,
-	00, 10, 20, 30, 30, 20, 10, 00,
-	00, 10, 20, 30, 30, 20, 10, 00,
-	-10, 00, 10, 20, 20, 10, 00, -10,
-	-20, -10, 00, 10, 10, 00, -10, -20,
-	-20, -20, -10, 00, 00, -10, -20, -20,
-}
-
-var kingVals = [64]int{
-	-50, -50, -50, -50, -50, -50, -50, -50,
-	-40, -40, -50, -50, -50, -50, -40, -40,
-	-30, -30, -40, -50, -50, -40, -30, -30,
-	-20, -20, -30, -40, -40, -30, -20, -20,
-	-10, -10, -20, -30, -30, -20, -10, -10,
-	0, 0, -10, -20, -20, -10, 0, 0,
-	10, 10, 0, -10, -10, 0, 10, 10,
-	20, 20, 10, 0, 0, 10, 20, 20,
-}
-
-var knightVals = [64]int{
-	-50, -40, -30, -30, -30, -30, -40, -50,
-	-40, -20, 00, 5, 5, 00, -20, -40,
-	-30, 00, 10, 15, 15, 10, 00, -30,
-	-30, 5, 15, 20, 20, 15, 5, -30,
-	-30, 5, 15, 20, 20, 15, 5, -30,
-	-30, 00, 10, 15, 15, 10, 00, -30,
-	-40, -20, 00, 5, 5, 00, -20, -40,
-	-50, -40, -30, -30, -30, -30, -40, -50,
-}
-
-var bishopVals = [64]int{
-	-50, -40, -30, -30, -30, -30, -40, -50,
-	-40, -20, 00, 5, 5, 00, -20, -40,
-	-30, 00, 10, 15, 15, 10, 00, -30,
-	-30, 5, 15, 20, 20, 15, 5, -30,
-	-30, 5, 15, 20, 20, 15, 5, -30,
-	-30, 00, 10, 15, 15, 10, 00, -30,
-	-40, -20, 00, 5, 5, 00, -20, -40,
-	-50, -40, -30, -30, -30, -30, -40, -50,
-}
-
-func Evaluate(b Board) int {
+func (e *Engine) Evaluate() int {
 	var multiplier int
-	if b.Turn == WhiteTurn {
+	if e.B.Turn == WhiteTurn {
 		multiplier = 1
 	} else {
 		multiplier = -1
@@ -104,18 +38,18 @@ func Evaluate(b Board) int {
 		queenWt  = 900
 		kingWt   = 20000
 
-		wP = bits.OnesCount64(b.whitePawns)
-		bP = bits.OnesCount64(b.blackPawns)
-		wR = bits.OnesCount64(b.whiteRooks)
-		bR = bits.OnesCount64(b.blackRooks)
-		wN = bits.OnesCount64(b.whiteKnights)
-		bN = bits.OnesCount64(b.blackKnights)
-		wB = bits.OnesCount64(b.whiteBishops)
-		bB = bits.OnesCount64(b.blackBishops)
-		wQ = bits.OnesCount64(b.whiteQueens)
-		bQ = bits.OnesCount64(b.blackQueens)
-		wK = bits.OnesCount64(b.whiteKings)
-		bK = bits.OnesCount64(b.blackKings)
+		wP = bits.OnesCount64(e.B.whitePawns)
+		bP = bits.OnesCount64(e.B.blackPawns)
+		wR = bits.OnesCount64(e.B.whiteRooks)
+		bR = bits.OnesCount64(e.B.blackRooks)
+		wN = bits.OnesCount64(e.B.whiteKnights)
+		bN = bits.OnesCount64(e.B.blackKnights)
+		wB = bits.OnesCount64(e.B.whiteBishops)
+		bB = bits.OnesCount64(e.B.blackBishops)
+		wQ = bits.OnesCount64(e.B.whiteQueens)
+		bQ = bits.OnesCount64(e.B.blackQueens)
+		wK = bits.OnesCount64(e.B.whiteKings)
+		bK = bits.OnesCount64(e.B.blackKings)
 	)
 
 	materialScore := pawnWt*(wP-bP) +
@@ -125,12 +59,12 @@ func Evaluate(b Board) int {
 		queenWt*(wQ-bQ) +
 		kingWt*(wK-bK)
 
-	positionalScore := sumWhiteValues(b.whitePawns, pawnVals) - sumBlackValues(b.blackPawns, pawnVals) +
-		sumWhiteValues(b.whiteKnights, knightVals) - sumBlackValues(b.blackKnights, knightVals) +
-		sumWhiteValues(b.whiteRooks, rookVals) - sumBlackValues(b.blackKnights, rookVals) +
-		sumWhiteValues(b.whiteKings, kingVals) - sumBlackValues(b.blackKings, kingVals) +
-		sumWhiteValues(b.whiteBishops, bishopVals) - sumBlackValues(b.blackBishops, bishopVals) +
-		sumWhiteValues(b.whiteQueens, queenVals) - sumBlackValues(b.blackQueens, queenVals)
+	positionalScore := sumWhiteValues(e.B.whitePawns, e.EP.PawnVals) - sumBlackValues(e.B.blackPawns, e.EP.PawnVals) +
+		sumWhiteValues(e.B.whiteKnights, e.EP.KnightVals) - sumBlackValues(e.B.blackKnights, e.EP.KnightVals) +
+		sumWhiteValues(e.B.whiteRooks, e.EP.RookVals) - sumBlackValues(e.B.blackKnights, e.EP.RookVals) +
+		sumWhiteValues(e.B.whiteKings, e.EP.KingVals) - sumBlackValues(e.B.blackKings, e.EP.KingVals) +
+		sumWhiteValues(e.B.whiteBishops, e.EP.BishopVals) - sumBlackValues(e.B.blackBishops, e.EP.BishopVals) +
+		sumWhiteValues(e.B.whiteQueens, e.EP.QueenVals) - sumBlackValues(e.B.blackQueens, e.EP.QueenVals)
 
 	score := materialScore + positionalScore
 
