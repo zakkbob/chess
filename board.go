@@ -2,6 +2,7 @@ package chess
 
 import (
 	"errors"
+
 	"math/bits"
 	"slices"
 	"strconv"
